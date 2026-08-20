@@ -1,0 +1,248 @@
+import { css, html, LitElement, TemplateResult } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
+import { profileStats } from "../shared/algorithm.js";
+import { Profile } from "../shared/type.app.js";
+import { ReadingBeeModal } from "./component.modal.js";
+import { ReadingBeePasscode } from "./component.passcode.js";
+import { appStore } from "./store.js";
+import { globalStyles } from "./styles.global.js";
+import "./component.modal.js";
+import "./component.passcode.js";
+
+@customElement("reading-bee-profile-modal")
+export class ReadingBeeProfileModal extends LitElement {
+  static override styles = [
+    globalStyles,
+    css`
+      .hero {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        gap: 0.45rem;
+        margin-bottom: 1.2rem;
+      }
+
+      .avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        box-shadow: var(--shadow-normal);
+      }
+
+      .level {
+        font-size: 0.95rem;
+        color: var(--color-1);
+        font-weight: 700;
+      }
+
+      .bar {
+        width: min(220px, 70%);
+        height: 8px;
+        border-radius: 999px;
+        background: #2a251e;
+        overflow: hidden;
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-1), #f3d27a);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+        margin: 1rem 0 1.3rem;
+      }
+
+      .stat {
+        background: #1a1713;
+        border: 1px solid var(--color-panel-border);
+        border-radius: 16px;
+        padding: 0.8rem;
+      }
+
+      .stat b {
+        display: block;
+        font-size: 1.2rem;
+      }
+
+      .stat span {
+        color: var(--color-primary-text-muted);
+        font-size: 0.82rem;
+      }
+
+      .list {
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.7rem;
+        border-radius: 16px;
+        background: #1a1713;
+        border: 1px solid var(--color-panel-border);
+        width: 100%;
+        text-align: left;
+      }
+
+      .row[current] {
+        border-color: var(--color-1);
+      }
+
+      .mini {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+      }
+
+      .meta {
+        display: grid;
+      }
+
+      .meta small {
+        color: var(--color-primary-text-muted);
+      }
+    `,
+  ];
+
+  @query("reading-bee-modal") private modal!: ReadingBeeModal;
+  @query("reading-bee-passcode") private pad?: ReadingBeePasscode;
+  @state() private switchingTo: string | null = null;
+  @state() private creatingPasscode = false;
+  @state() private pendingPasscode = "";
+
+  override render(): TemplateResult {
+    const profile = appStore.currentProfile;
+    if (!profile) return html``;
+    const stats = profileStats(profile);
+    const progress = `${profile.level}%`;
+    return html`
+      <reading-bee-modal @ModelClosing=${this.reset}>
+        <slot name="open-button" slot="open-button"></slot>
+        <div slot="body">
+          ${
+            this.switchingTo
+              ? this.passcodeView()
+              : html`
+                  <div class="hero">
+                    <div class="avatar" style=${this.avatarStyle(profile)}></div>
+                    <h2>${profile.name}</h2>
+                    <div class="level">Level ${profile.level}</div>
+                    <div class="bar"><span style="width:${progress}"></span></div>
+                  </div>
+                  <div class="stats">
+                    <div class="stat">
+                      <b>${stats.read}</b>
+                      <span>Texts read</span>
+                    </div>
+                    <div class="stat">
+                      <b>${stats.right}</b>
+                      <span>Right</span>
+                    </div>
+                    <div class="stat">
+                      <b>${stats.wrong}</b>
+                      <span>Wrong</span>
+                    </div>
+                    <div class="stat">
+                      <b>${stats.skip + stats.wayTooEasy}</b>
+                      <span>Skipped / easy</span>
+                    </div>
+                  </div>
+                  <h2>Switch profile</h2>
+                  <div class="list">
+                    ${appStore.state.profiles.map(
+                      (item) => html`
+                        <button class="row" ?current=${item.id === profile.id} @click=${() => this.requestSwitch(item)}>
+                          <div class="mini" style=${this.avatarStyle(item)}></div>
+                          <div class="meta">
+                            <strong>${item.name}</strong>
+                            <small>Level ${item.level}</small>
+                          </div>
+                        </button>
+                      `,
+                    )}
+                  </div>
+                `
+          }
+        </div>
+      </reading-bee-modal>
+    `;
+  }
+
+  open(): void {
+    void this.modal.open();
+  }
+
+  private avatarStyle(profile: Profile): string {
+    return `background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);`;
+  }
+
+  private passcodeView(): TemplateResult {
+    if (this.creatingPasscode) {
+      return html`
+        <reading-bee-passcode
+          title=${this.pendingPasscode ? "Confirm passcode" : "Create passcode"}
+          hint=${this.pendingPasscode ? "Enter it once more" : "Set a 4-digit instructor passcode"}
+          @complete=${this.onCreatePasscode}></reading-bee-passcode>
+      `;
+    }
+    return html`
+      <reading-bee-passcode
+        title="Switch profile"
+        hint="Enter the instructor passcode"
+        @complete=${this.onUnlock}></reading-bee-passcode>
+    `;
+  }
+
+  private requestSwitch(profile: Profile): void {
+    if (profile.id === appStore.state.currentProfileId) return;
+    this.switchingTo = profile.id;
+    this.creatingPasscode = !appStore.hasPasscode();
+    this.pendingPasscode = "";
+  }
+
+  private onCreatePasscode = (event: Event): void => {
+    const value = (event as CustomEvent<{ value: string }>).detail.value;
+    if (!this.pendingPasscode) {
+      this.pendingPasscode = value;
+      this.pad?.reset();
+      return;
+    }
+    if (value !== this.pendingPasscode) {
+      this.pendingPasscode = "";
+      this.pad?.shake();
+      return;
+    }
+    appStore.setPasscode(value);
+    this.finishSwitch();
+  };
+
+  private onUnlock = (event: Event): void => {
+    const value = (event as CustomEvent<{ value: string }>).detail.value;
+    if (!appStore.verifyPasscode(value)) {
+      this.pad?.shake();
+      return;
+    }
+    this.finishSwitch();
+  };
+
+  private finishSwitch(): void {
+    if (this.switchingTo) {
+      appStore.switchProfile(this.switchingTo);
+    }
+    this.reset();
+    void this.modal.close();
+  }
+
+  private reset = (): void => {
+    this.switchingTo = null;
+    this.creatingPasscode = false;
+    this.pendingPasscode = "";
+  };
+}

@@ -1,0 +1,60 @@
+{
+  "name": "readingbee",
+  "version": "1.0.0",
+  "description": "Reading Bee helps beginner readers learn to read.",
+  "type": "module",
+  "scripts": {
+    "start": "run-s build serve",
+    "serve": "run-p watch serve:static",
+    "serve:static": "serve dist -s -l 3000",
+    "watch": "run-p watch:tsc watch:rollup",
+    "watch:rollup": "rollup -c --watch",
+    "watch:tsc": "tsc --watch --preserveWatchOutput",
+    "build": "run-s build:tsc build:rollup copy:static",
+    "build:rollup": "rollup -c",
+    "build:tsc": "tsc",
+    "copy:static": "node scripts/copy-static.mjs",
+    "lint": "prettier src --check && eslint src",
+    "fix": "prettier src --write && eslint src --fix",
+    "test": "tsc && node --test dist/shared/*.test.js",
+    "generate:corpus": "node scripts/generate-corpus.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/megazear7/readingbee.git"
+  },
+  "keywords": [
+    "reading",
+    "education",
+    "pwa",
+    "lit",
+    "typescript",
+    "zelt"
+  ],
+  "author": "Alex Lockhart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/megazear7/readingbee/issues"
+  },
+  "homepage": "https://github.com/megazear7/readingbee#readme",
+  "dependencies": {
+    "@lit/context": "^1.1.6",
+    "lit": "^3.3.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/node": "^24.9.2",
+    "eslint": "^9.39.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.2",
+    "rollup": "^4.52.5",
+    "serve": "^14.2.4",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2"
+  }
+}

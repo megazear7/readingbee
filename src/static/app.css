@@ -1,0 +1,107 @@
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/nunito-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/nunito-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Lexend";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/lexend-500.woff2") format("woff2");
+}
+
+html {
+  --color-1: #e8b84a;
+  --color-2: #f4ead5;
+  --color-primary-surface: #0c0b09;
+  --color-primary-text: #f4ead5;
+  --color-primary-text-muted: #8a8175;
+  --color-primary-text-bold: #d9cbb3;
+  --color-secondary-surface: #161410;
+  --color-secondary-text: #f4ead5;
+  --color-panel: #1c1914;
+  --color-panel-border: rgba(244, 234, 213, 0.08);
+  --color-accent: #e8b84a;
+  --color-error: #e85d4c;
+  --color-danger: #e85d4c;
+  --color-warning: #f0c36a;
+  --color-success: #7dce82;
+  --size-8x: 300px;
+  --size-7x: 250px;
+  --size-6x: 200px;
+  --size-5x: 150px;
+  --size-4x: 100px;
+  --size-3x: 60px;
+  --size-2x: 48px;
+  --size-xl: 32px;
+  --size-large: 20px;
+  --size-medium: 12px;
+  --size-small: 8px;
+  --size-tiny: 4px;
+  --font-xl: 28px;
+  --font-large: 22px;
+  --font-medium: 18px;
+  --font-small: 14px;
+  --font-tiny: 12px;
+  --line-height: 1.5;
+  --font-family: "Nunito", "Avenir Next", "Segoe UI", sans-serif;
+  --font-reading: "Lexend", "Nunito", sans-serif;
+  --border-radius-medium: 16px;
+  --border-radius-large: 24px;
+  --shadow-normal: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --shadow-active: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --time-normal: 280ms;
+  --transition-all: all var(--time-normal) ease;
+  margin: 0;
+  padding: 0;
+  background: #0c0b09;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 700px at 50% -20%, #1a1610 0%, #0c0b09 58%);
+  color: var(--color-primary-text);
+  font-size: var(--font-medium);
+  font-family: var(--font-family);
+  line-height: var(--line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+reading-bee-app {
+  display: block;
+  min-height: 100%;
+  height: 100%;
+}
