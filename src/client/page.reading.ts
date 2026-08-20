@@ -1,6 +1,8 @@
 import { css, html, LitElement, TemplateResult } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
+import { repeat } from "lit/directives/repeat.js";
 import { ResultKind } from "../shared/type.app.js";
+import { StoreController } from "./controller.store.js";
 import { checkIcon, gearIcon, xIcon } from "./icons.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -54,6 +56,16 @@ export class ReadingBeeReading extends LitElement {
         display: grid;
         place-items: center;
         padding: 1rem;
+        transition: background-color 180ms ease;
+        border-radius: 28px;
+      }
+
+      .stage.flash-right {
+        background: rgba(125, 206, 130, 0.08);
+      }
+
+      .stage.flash-wrong {
+        background: rgba(232, 93, 76, 0.08);
       }
 
       .prompt {
@@ -143,6 +155,11 @@ export class ReadingBeeReading extends LitElement {
         transform: scale(0.96);
       }
 
+      .score-btn svg {
+        width: 36px;
+        height: 36px;
+      }
+
       .muted-row {
         display: flex;
         gap: 1.4rem;
@@ -158,8 +175,21 @@ export class ReadingBeeReading extends LitElement {
       .muted-row button:hover {
         opacity: 0.9;
       }
+
+      .icon-btn svg {
+        width: 22px;
+        height: 22px;
+      }
     `,
   ];
+
+  @state() private flash: "right" | "wrong" | null = null;
+  private locked = false;
+
+  constructor() {
+    super();
+    new StoreController(this);
+  }
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -193,8 +223,14 @@ export class ReadingBeeReading extends LitElement {
               style="background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);"></button>
           </reading-bee-profile-modal>
         </header>
-        <div class="stage">
-          <div class="prompt" data-kind=${text.kind}>${text.text}</div>
+        <div class="stage ${this.flash ? `flash-${this.flash}` : ""}">
+          ${repeat(
+            [text],
+            (item) => item.id,
+            (item) => html`
+              <div class="prompt" data-kind=${item.kind}>${item.text}</div>
+            `,
+          )}
         </div>
         <footer>
           <div class="score">
@@ -213,7 +249,16 @@ export class ReadingBeeReading extends LitElement {
   }
 
   private record(result: ResultKind): void {
+    if (this.locked) return;
+    this.locked = true;
+    if (result === "right" || result === "wrong") {
+      this.flash = result;
+    }
     appStore.record(result);
+    window.setTimeout(() => {
+      this.flash = null;
+      this.locked = false;
+    }, 220);
   }
 
   private onKey = (event: KeyboardEvent): void => {

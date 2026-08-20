@@ -2,11 +2,15 @@ import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { COLOR_PAIRS } from "../shared/colors.js";
 import { Profile, ReadingBand } from "../shared/type.app.js";
-import { downloadIcon, plusIcon, trashIcon } from "./icons.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
+import { StoreController } from "./controller.store.js";
+import { SuccessEvent } from "./event.success.js";
+import { WarningEvent } from "./event.warning.js";
+import { downloadIcon, plusIcon, trashIcon } from "./icons.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import { dispatch } from "./util.events.js";
 import "./component.modal.js";
 import "./component.passcode.js";
 
@@ -92,11 +96,21 @@ export class ReadingBeeSettings extends LitElement {
         display: grid;
         gap: 0.8rem;
       }
+
+      .confirm-row {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .remove-confirm {
+        font-size: 0.85rem;
+        color: var(--color-danger);
+      }
     `,
   ];
 
   @query("reading-bee-modal") private modal!: ReadingBeeModal;
-  @query("reading-bee-passcode") private pad?: ReadingBeePasscode;
   @state() private unlocked = false;
   @state() private creating = false;
   @state() private pendingPasscode = "";
@@ -105,7 +119,13 @@ export class ReadingBeeSettings extends LitElement {
   @state() private updatingPasscode = false;
   @state() private passcodeStep: "current" | "next" | "confirm" = "current";
   @state() private nextPasscode = "";
-  @state() private confirmWipe = false;
+  @state() private wipeStep: "none" | "confirm" | "pin" = "none";
+  @state() private pendingDeleteId: string | null = null;
+
+  constructor() {
+    super();
+    new StoreController(this);
+  }
 
   override render(): TemplateResult {
     return html`
@@ -139,16 +159,28 @@ export class ReadingBeeSettings extends LitElement {
           @complete=${this.onUpdatePasscode}></reading-bee-passcode>
       `;
     }
-    if (this.confirmWipe) {
+    if (this.wipeStep === "confirm") {
       return html`
         <div class="confirm">
           <h2>Delete all app data?</h2>
           <p>This cannot be undone. Every profile, result, and setting will be permanently deleted.</p>
+          <div class="confirm-row">
+            <button class="ghost-btn" @click=${() => (this.wipeStep = "none")}>Cancel</button>
+            <button class="danger-btn" @click=${() => (this.wipeStep = "pin")}>Yes, delete everything</button>
+          </div>
+        </div>
+      `;
+    }
+    if (this.wipeStep === "pin") {
+      return html`
+        <div class="confirm">
+          <h2>Re-enter passcode</h2>
+          <p>Enter the instructor passcode to permanently delete all data.</p>
           <reading-bee-passcode
-            title="Re-enter passcode"
-            hint="Confirm with the instructor passcode"
+            title="Confirm delete"
+            hint="4-digit passcode"
             @complete=${this.onWipe}></reading-bee-passcode>
-          <button class="ghost-btn" @click=${() => (this.confirmWipe = false)}>Cancel</button>
+          <button class="ghost-btn" @click=${() => (this.wipeStep = "none")}>Cancel</button>
         </div>
       `;
     }
@@ -167,14 +199,16 @@ export class ReadingBeeSettings extends LitElement {
             `,
           )}
         </select>
-        <button class="primary-btn" @click=${this.addProfile}>${plusIcon} Add profile</button>
+        <button class="primary-btn" ?disabled=${!this.newName.trim()} @click=${this.addProfile}>
+          ${plusIcon} Add profile
+        </button>
       </div>
       <h2>App data</h2>
       <button class="ghost-btn" @click=${this.download}>${downloadIcon} Download JSON</button>
       <div class="danger">
         <h2>Danger zone</h2>
         <p>Permanently delete all Reading Bee data on this device.</p>
-        <button class="danger-btn" @click=${() => (this.confirmWipe = true)}>${trashIcon} Delete all app data</button>
+        <button class="danger-btn" @click=${() => (this.wipeStep = "confirm")}>${trashIcon} Delete all app data</button>
       </div>
     `;
   }
@@ -188,9 +222,23 @@ export class ReadingBeeSettings extends LitElement {
             style="background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);"></div>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level">Lv ${profile.level}</div>
-          <button class="muted-btn" aria-label="Remove profile" @click=${() => appStore.removeProfile(profile.id)}>
-            ${trashIcon}
-          </button>
+          ${
+            this.pendingDeleteId === profile.id
+              ? html`
+                  <span class="remove-confirm">
+                    <button class="danger-btn" @click=${() => this.removeProfile(profile.id)}>Delete</button>
+                    <button class="muted-btn" @click=${() => (this.pendingDeleteId = null)}>Cancel</button>
+                  </span>
+                `
+              : html`
+                  <button
+                    class="muted-btn"
+                    aria-label="Remove profile"
+                    @click=${() => (this.pendingDeleteId = profile.id)}>
+                    ${trashIcon}
+                  </button>
+                `
+          }
         </div>
         <div class="pairs">
           ${COLOR_PAIRS.map(
@@ -214,10 +262,14 @@ export class ReadingBeeSettings extends LitElement {
     return "Confirm new passcode";
   }
 
+  private padFrom(event: Event): ReadingBeePasscode {
+    return event.currentTarget as ReadingBeePasscode;
+  }
+
   private onUnlock = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;
     if (!appStore.verifyPasscode(value)) {
-      this.pad?.shake();
+      this.padFrom(event).shake();
       return;
     }
     this.unlocked = true;
@@ -225,54 +277,58 @@ export class ReadingBeeSettings extends LitElement {
 
   private onCreate = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;
+    const pad = this.padFrom(event);
     if (!this.pendingPasscode) {
       this.pendingPasscode = value;
       this.creating = true;
-      this.pad?.reset();
+      pad.reset();
       return;
     }
     if (value !== this.pendingPasscode) {
       this.pendingPasscode = "";
-      this.pad?.shake();
+      pad.shake();
       return;
     }
     appStore.setPasscode(value);
     this.unlocked = true;
+    dispatch(this, SuccessEvent("Passcode saved"));
   };
 
   private onUpdatePasscode = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;
+    const pad = this.padFrom(event);
     if (this.passcodeStep === "current") {
       if (!appStore.verifyPasscode(value)) {
-        this.pad?.shake();
+        pad.shake();
         return;
       }
       this.passcodeStep = "next";
-      this.pad?.reset();
+      pad.reset();
       return;
     }
     if (this.passcodeStep === "next") {
       this.nextPasscode = value;
       this.passcodeStep = "confirm";
-      this.pad?.reset();
+      pad.reset();
       return;
     }
     if (value !== this.nextPasscode) {
       this.nextPasscode = "";
       this.passcodeStep = "next";
-      this.pad?.shake();
+      pad.shake();
       return;
     }
     appStore.setPasscode(value);
     this.updatingPasscode = false;
     this.passcodeStep = "current";
     this.nextPasscode = "";
+    dispatch(this, SuccessEvent("Passcode updated"));
   };
 
   private onWipe = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;
     if (!appStore.verifyPasscode(value)) {
-      this.pad?.shake();
+      this.padFrom(event).shake();
       return;
     }
     appStore.wipeAll();
@@ -288,10 +344,20 @@ export class ReadingBeeSettings extends LitElement {
   };
 
   private addProfile = (): void => {
-    if (!this.newName.trim()) return;
+    if (!this.newName.trim()) {
+      dispatch(this, WarningEvent("Enter a profile name"));
+      return;
+    }
     appStore.addProfile(this.newName, this.newBand);
     this.newName = "";
+    dispatch(this, SuccessEvent("Profile added"));
   };
+
+  private removeProfile(id: string): void {
+    appStore.removeProfile(id);
+    this.pendingDeleteId = null;
+    dispatch(this, SuccessEvent("Profile removed"));
+  }
 
   private rename(id: string, event: Event): void {
     appStore.renameProfile(id, (event.target as HTMLInputElement).value);
@@ -305,6 +371,7 @@ export class ReadingBeeSettings extends LitElement {
     link.download = "reading-bee-data.json";
     link.click();
     URL.revokeObjectURL(url);
+    dispatch(this, SuccessEvent("Downloaded reading-bee-data.json"));
   };
 
   private reset = (): void => {
@@ -314,6 +381,7 @@ export class ReadingBeeSettings extends LitElement {
     this.updatingPasscode = false;
     this.passcodeStep = "current";
     this.nextPasscode = "";
-    this.confirmWipe = false;
+    this.wipeStep = "none";
+    this.pendingDeleteId = null;
   };
 }

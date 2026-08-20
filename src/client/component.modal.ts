@@ -64,6 +64,11 @@ export class ReadingBeeModal extends LitElement {
         place-items: center;
       }
 
+      .close-button svg {
+        width: 18px;
+        height: 18px;
+      }
+
       .close-button:hover {
         color: var(--color-error);
         background: rgba(232, 93, 76, 0.08);

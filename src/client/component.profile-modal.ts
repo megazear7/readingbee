@@ -4,8 +4,11 @@ import { profileStats } from "../shared/algorithm.js";
 import { Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
+import { StoreController } from "./controller.store.js";
+import { SuccessEvent } from "./event.success.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import { dispatch } from "./util.events.js";
 import "./component.modal.js";
 import "./component.passcode.js";
 
@@ -112,10 +115,14 @@ export class ReadingBeeProfileModal extends LitElement {
   ];
 
   @query("reading-bee-modal") private modal!: ReadingBeeModal;
-  @query("reading-bee-passcode") private pad?: ReadingBeePasscode;
   @state() private switchingTo: string | null = null;
   @state() private creatingPasscode = false;
   @state() private pendingPasscode = "";
+
+  constructor() {
+    super();
+    new StoreController(this);
+  }
 
   override render(): TemplateResult {
     const profile = appStore.currentProfile;
@@ -207,16 +214,21 @@ export class ReadingBeeProfileModal extends LitElement {
     this.pendingPasscode = "";
   }
 
+  private padFrom(event: Event): ReadingBeePasscode {
+    return event.currentTarget as ReadingBeePasscode;
+  }
+
   private onCreatePasscode = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;
+    const pad = this.padFrom(event);
     if (!this.pendingPasscode) {
       this.pendingPasscode = value;
-      this.pad?.reset();
+      pad.reset();
       return;
     }
     if (value !== this.pendingPasscode) {
       this.pendingPasscode = "";
-      this.pad?.shake();
+      pad.shake();
       return;
     }
     appStore.setPasscode(value);
@@ -226,7 +238,7 @@ export class ReadingBeeProfileModal extends LitElement {
   private onUnlock = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;
     if (!appStore.verifyPasscode(value)) {
-      this.pad?.shake();
+      this.padFrom(event).shake();
       return;
     }
     this.finishSwitch();
@@ -235,6 +247,7 @@ export class ReadingBeeProfileModal extends LitElement {
   private finishSwitch(): void {
     if (this.switchingTo) {
       appStore.switchProfile(this.switchingTo);
+      dispatch(this, SuccessEvent("Switched profile"));
     }
     this.reset();
     void this.modal.close();

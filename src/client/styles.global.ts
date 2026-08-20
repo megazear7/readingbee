@@ -73,9 +73,15 @@ export const globalStyles = css`
     font-weight: 700;
   }
 
-  .primary-btn:hover {
+  .primary-btn:hover:not(:disabled) {
     transform: translateY(-1px);
     filter: brightness(1.05);
+  }
+
+  .primary-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
   }
 
   .ghost-btn {
