@@ -75,3 +75,19 @@ export const SHOP_ITEMS: ShopItem[] = [
 ];
 
 export const shopItemById = (id: string): ShopItem | undefined => SHOP_ITEMS.find((item) => item.id === id);
+
+export const SHOP_COLUMNS = 3;
+export const SHOP_MIN_VISIBLE_ROWS = 3;
+
+export const visibleShopCount = (coinsEarned: number): number => {
+  const minVisible = SHOP_COLUMNS * SHOP_MIN_VISIBLE_ROWS;
+  const unlocked = SHOP_ITEMS.filter((item) => item.cost < coinsEarned / 2).length;
+  const count = Math.max(minVisible, unlocked);
+  const rows = Math.ceil(count / SHOP_COLUMNS) * SHOP_COLUMNS;
+  return Math.min(SHOP_ITEMS.length, rows);
+};
+
+export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 0): number => {
+  const spent = inventory.reduce((sum, id) => sum + (shopItemById(id)?.cost ?? 0), 0);
+  return Math.max(coinsEarned, coins + spent);
+};

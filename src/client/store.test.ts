@@ -96,6 +96,7 @@ describe("AppStore", () => {
     const store = new AppStore(storage);
     assert.equal(store.currentProfile?.level, 47);
     assert.equal(store.currentProfile?.coins, 0);
+    assert.equal(store.currentProfile?.coinsEarned, 0);
     assert.deepEqual(store.currentProfile?.inventory, []);
     assert.equal(store.state.version, APP_VERSION);
   });
@@ -111,9 +112,12 @@ describe("AppStore", () => {
     assert.equal(awarded, true);
     assert.equal((store.currentProfile?.coins ?? 0) >= 1, true);
     const coins = store.currentProfile!.coins;
+    const earned = store.currentProfile!.coinsEarned;
+    assert.equal(earned >= 1, true);
     assert.equal(store.buyItem("sticker"), coins >= 1);
     if (coins >= 1) {
       assert.equal(store.currentProfile?.inventory.includes("sticker"), true);
+      assert.equal(store.currentProfile?.coinsEarned, earned);
       assert.equal(store.buyItem("sticker"), false);
     }
   });

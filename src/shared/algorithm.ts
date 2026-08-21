@@ -141,6 +141,7 @@ export const createProfile = (
     textStats: {},
     events: [],
     coins: 0,
+    coinsEarned: 0,
     inventory: [],
     correctsUntilCoin: 0,
   };

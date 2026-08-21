@@ -64,6 +64,7 @@ export const Profile = z.object({
   textStats: z.record(z.string(), TextStat),
   events: z.array(ReadingEvent),
   coins: z.number().int().nonnegative().default(0),
+  coinsEarned: z.number().int().nonnegative().default(0),
   inventory: z.array(z.string()).default([]),
   correctsUntilCoin: z.number().nonnegative().multipleOf(0.5).default(0),
 });

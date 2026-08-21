@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { SHOP_ITEMS } from "./shop-items.js";
+import { SHOP_ITEMS, visibleShopCount } from "./shop-items.js";
 
 const staticDir = fileURLToPath(new URL("../../src/static", import.meta.url));
 
@@ -18,5 +18,13 @@ describe("SHOP_ITEMS", () => {
       const file = join(staticDir, item.image.replace(/^\//, ""));
       assert.equal(existsSync(file), true, item.image);
     }
+  });
+
+  it("always reveals the first three rows, then more as coins are earned", () => {
+    assert.equal(visibleShopCount(0), 9);
+    assert.equal(visibleShopCount(18), 9);
+    assert.equal(visibleShopCount(22), 12);
+    assert.equal(visibleShopCount(40), 21);
+    assert.equal(visibleShopCount(200), SHOP_ITEMS.length);
   });
 });

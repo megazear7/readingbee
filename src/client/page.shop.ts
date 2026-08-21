@@ -1,6 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { SHOP_ITEMS, ShopItem } from "../shared/shop-items.js";
+import { SHOP_ITEMS, ShopItem, visibleShopCount } from "../shared/shop-items.js";
 import { StoreController } from "./controller.store.js";
 import { backIcon } from "./icons.js";
 import { navigate } from "./nav.js";
@@ -94,7 +94,7 @@ export class ReadingBeeShop extends LitElement {
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.75rem;
       }
 
@@ -120,6 +120,30 @@ export class ReadingBeeShop extends LitElement {
       .card.sold img {
         filter: grayscale(1);
         opacity: 0.62;
+      }
+
+      .card.mystery {
+        pointer-events: none;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card.mystery img {
+        filter: blur(18px) grayscale(1) brightness(0.18);
+        opacity: 0.18;
+      }
+
+      .card.mystery .name,
+      .card.mystery .meta {
+        visibility: hidden;
+      }
+
+      .card.mystery::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: rgba(12, 11, 9, 0.82);
       }
 
       .card.popping img {
@@ -179,7 +203,7 @@ export class ReadingBeeShop extends LitElement {
       `;
     }
     const owned = SHOP_ITEMS.filter((item) => profile.inventory.includes(item.id));
-    const catalog = SHOP_ITEMS;
+    const reveal = visibleShopCount(profile.coinsEarned);
     return html`
       <div class="page">
         <header>
@@ -198,33 +222,36 @@ export class ReadingBeeShop extends LitElement {
                   <p class="empty">Nothing here yet. Earn coins by reading, then pick a reward below.</p>
                 `
               : html`
-                  <div class="grid">${owned.map((item) => this.card(item, profile.coins, true))}</div>
+                  <div class="grid">${owned.map((item) => this.card(item, profile.coins, true, false))}</div>
                 `
           }
           <h2>Rewards</h2>
           <p class="lede">Tap a colorful item to buy it. Gray items cost more coins than you have right now.</p>
-          <div class="grid">${catalog.map((item) => this.card(item, profile.coins, false))}</div>
+          <div class="grid">
+            ${SHOP_ITEMS.map((item, index) => this.card(item, profile.coins, false, index >= reveal))}
+          </div>
         </div>
       </div>
     `;
   }
 
-  private card(item: ShopItem, coins: number, inventory: boolean): TemplateResult {
+  private card(item: ShopItem, coins: number, inventory: boolean, mystery: boolean): TemplateResult {
     const owned = Boolean(appStore.currentProfile?.inventory.includes(item.id));
-    const buyable = !owned && coins >= item.cost;
-    const locked = !owned && !buyable;
+    const buyable = !owned && !mystery && coins >= item.cost;
+    const locked = !owned && !mystery && !buyable;
     const classes = [
       "card",
       buyable && !inventory ? "buyable" : "",
       locked ? "locked" : "",
       owned && !inventory ? "sold" : "",
+      mystery ? "mystery" : "",
       this.poppingId === item.id ? "popping" : "",
     ]
       .filter(Boolean)
       .join(" ");
     return html`
-      <button class=${classes} @click=${() => this.onItem(item, inventory)}>
-        <img src=${item.image} alt=${item.name} />
+      <button class=${classes} ?disabled=${mystery} @click=${() => this.onItem(item, inventory, mystery)}>
+        <img src=${item.image} alt=${mystery ? "" : item.name} />
         <span class="name">${item.name}</span>
         <span class="meta">
           ${owned && !inventory ? "Already purchased" : `${item.cost} coin${item.cost === 1 ? "" : "s"}`}
@@ -233,7 +260,8 @@ export class ReadingBeeShop extends LitElement {
     `;
   }
 
-  private onItem = (item: ShopItem, inventory: boolean): void => {
+  private onItem = (item: ShopItem, inventory: boolean, mystery = false): void => {
+    if (mystery) return;
     if (inventory) {
       this.play(item.id);
       return;
