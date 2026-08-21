@@ -19,6 +19,18 @@ export const xIcon = html`
   </svg>
 `;
 
+export const raindropIcon = html`
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    width="36"
+    height="36"
+    fill="currentColor"
+    aria-hidden="true">
+    <path d="M12 3s6.8 7.5 6.8 12.2a6.8 6.8 0 1 1-13.6 0C5.2 10.5 12 3 12 3z" />
+  </svg>
+`;
+
 export const backIcon = html`
   <svg
     xmlns="http://www.w3.org/2000/svg"

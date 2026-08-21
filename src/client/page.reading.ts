@@ -4,7 +4,7 @@ import { avatarStyle, profileInitial } from "../shared/colors.js";
 import { pictureFor } from "../shared/letter-pictures.js";
 import { ReadingText, ResultKind } from "../shared/type.app.js";
 import { StoreController } from "./controller.store.js";
-import { checkIcon, gearIcon, xIcon } from "./icons.js";
+import { checkIcon, gearIcon, raindropIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -237,6 +237,60 @@ export class ReadingBeeReading extends LitElement {
         min-width: 88px;
       }
 
+      .tip-wrap {
+        position: relative;
+        display: grid;
+        place-items: center;
+      }
+
+      .tip {
+        position: absolute;
+        bottom: calc(100% + 0.55rem);
+        left: 50%;
+        z-index: 12;
+        padding: 0.45rem 0.7rem;
+        border-radius: 12px;
+        background: #1a1713;
+        color: var(--color-primary-text);
+        font-size: 0.82rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-50%) translateY(6px);
+        transition:
+          opacity var(--time-normal) ease,
+          transform var(--time-normal) ease,
+          visibility var(--time-normal) ease;
+      }
+
+      .tip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #1a1713;
+      }
+
+      .tip-wrap:focus-within .tip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .tip-wrap:hover .tip {
+          opacity: 1;
+          visibility: visible;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
       .score-btn {
         width: 88px;
         height: 88px;
@@ -255,11 +309,11 @@ export class ReadingBeeReading extends LitElement {
       }
 
       .no {
-        background: rgba(232, 93, 76, 0.12);
-        color: var(--color-error);
+        background: rgba(90, 166, 232, 0.14);
+        color: var(--color-practice);
         box-shadow:
-          0 0 0 1px rgba(232, 93, 76, 0.25),
-          0 10px 30px rgba(232, 93, 76, 0.08);
+          0 0 0 1px rgba(90, 166, 232, 0.28),
+          0 10px 30px rgba(90, 166, 232, 0.08);
       }
 
       .score-btn:hover {
@@ -314,8 +368,8 @@ export class ReadingBeeReading extends LitElement {
       }
 
       .ripple.no {
-        background: radial-gradient(circle, rgba(232, 93, 76, 0.4) 0%, rgba(232, 93, 76, 0.12) 42%, transparent 70%);
-        box-shadow: 0 0 0 3px rgba(232, 93, 76, 0.45);
+        background: radial-gradient(circle, rgba(90, 166, 232, 0.42) 0%, rgba(90, 166, 232, 0.12) 42%, transparent 70%);
+        box-shadow: 0 0 0 3px rgba(90, 166, 232, 0.45);
       }
 
       @keyframes scoreRipple {
@@ -409,15 +463,27 @@ export class ReadingBeeReading extends LitElement {
         </div>
         <footer>
           <div class="action">
-            <button class="score-btn yes" aria-label="Correct" @click=${(event: Event) => this.record("right", event)}>
-              ${checkIcon}
-            </button>
+            <div class="tip-wrap">
+              <button
+                class="score-btn yes"
+                aria-label="Mastered this one"
+                @click=${(event: Event) => this.record("right", event)}>
+                ${checkIcon}
+              </button>
+              <span class="tip" role="tooltip">Mastered this one</span>
+            </div>
             <button class="muted" @click=${() => this.record("wayTooEasy")}>Way too easy</button>
           </div>
           <div class="action">
-            <button class="score-btn no" aria-label="Incorrect" @click=${(event: Event) => this.record("wrong", event)}>
-              ${xIcon}
-            </button>
+            <div class="tip-wrap">
+              <button
+                class="score-btn no"
+                aria-label="Needs more practice"
+                @click=${(event: Event) => this.record("wrong", event)}>
+                ${raindropIcon}
+              </button>
+              <span class="tip" role="tooltip">Needs more practice</span>
+            </div>
             <button class="muted" @click=${() => this.record("skip")}>Skip</button>
           </div>
         </footer>

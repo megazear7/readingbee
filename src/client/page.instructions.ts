@@ -101,8 +101,8 @@ export class ReadingBeeInstructions extends LitElement {
               read.
             </p>
             <ul>
-              <li>Tap the green check if they read it correctly.</li>
-              <li>Tap the red X if they did not.</li>
+              <li>Tap the green check if they read it correctly ("Mastered this one").</li>
+              <li>Tap the blue raindrop if they need more practice. It works the same as a wrong answer.</li>
               <li>Use Skip if you want a different prompt.</li>
               <li>Use Way too easy if the work is far below what they can read.</li>
             </ul>
@@ -114,7 +114,7 @@ export class ReadingBeeInstructions extends LitElement {
               </li>
               <li>
                 <kbd>→</kbd>
-                right arrow — same as the red X
+                right arrow — same as the blue raindrop
               </li>
               <li>
                 <kbd>Enter</kbd>

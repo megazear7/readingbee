@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-const CACHE_NAME = "reading-bee-v9";
+const CACHE_NAME = "reading-bee-v10";
 const ASSETS = [
   "/",
   "/index.html",
