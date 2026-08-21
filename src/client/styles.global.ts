@@ -1,6 +1,13 @@
 import { css } from "lit";
 
 export const globalStyles = css`
+  :host,
+  :host *,
+  :host *::before,
+  :host *::after {
+    box-sizing: border-box;
+  }
+
   :host {
     font-family: var(--font-family);
     color: var(--color-primary-text);
@@ -37,6 +44,7 @@ export const globalStyles = css`
 
   input,
   select {
+    box-sizing: border-box;
     font: inherit;
     color: var(--color-primary-text);
     background: #221e18;
