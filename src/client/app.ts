@@ -1,5 +1,6 @@
 import { html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
+import { LETTER_PICTURES } from "../shared/letter-pictures.js";
 import { ReadingBeeToast } from "./component.toast.js";
 import { SuccessEventName } from "./event.success.js";
 import { AppView } from "./event.view.js";
@@ -90,8 +91,18 @@ export class ReadingBeeApp extends LitElement {
   };
 
   private registerServiceWorker(): void {
-    if (!("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.register("/sw.js");
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+    }
+    this.preloadLetterPictures();
+  }
+
+  private preloadLetterPictures(): void {
+    for (const src of Object.values(LETTER_PICTURES)) {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = src;
+    }
   }
 
   private onPopState = (): void => {
