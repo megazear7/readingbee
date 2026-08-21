@@ -2,6 +2,7 @@ import z from "zod";
 import { ModelClosingEventData } from "./event.modal-closing.js";
 import { ModelOpeningEventData } from "./event.modal-opening.js";
 import { SuccessEventData } from "./event.success.js";
+import { ViewEventData } from "./event.view.js";
 import { WarningEventData } from "./event.warning.js";
 
 export const ReadingBeeEvent = z.union([
@@ -9,6 +10,7 @@ export const ReadingBeeEvent = z.union([
   ModelClosingEventData,
   SuccessEventData,
   WarningEventData,
+  ViewEventData,
 ]);
 export type ReadingBeeEvent = z.infer<typeof ReadingBeeEvent>;
 

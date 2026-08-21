@@ -4,10 +4,10 @@ import { repeat } from "lit/directives/repeat.js";
 import { ResultKind } from "../shared/type.app.js";
 import { StoreController } from "./controller.store.js";
 import { checkIcon, gearIcon, xIcon } from "./icons.js";
+import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import "./component.profile-modal.js";
-import "./component.settings.js";
 
 @customElement("reading-bee-reading")
 export class ReadingBeeReading extends LitElement {
@@ -212,9 +212,7 @@ export class ReadingBeeReading extends LitElement {
     return html`
       <div class="screen">
         <header>
-          <reading-bee-settings>
-            <button slot="open-button" class="icon-btn" aria-label="Settings">${gearIcon}</button>
-          </reading-bee-settings>
+          <button class="icon-btn" aria-label="Settings" @click=${this.openSettings}>${gearIcon}</button>
           <reading-bee-profile-modal>
             <button
               slot="open-button"
@@ -247,6 +245,10 @@ export class ReadingBeeReading extends LitElement {
       </div>
     `;
   }
+
+  private openSettings = (): void => {
+    navigate("settings");
+  };
 
   private record(result: ResultKind): void {
     if (this.locked) return;

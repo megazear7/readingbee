@@ -1,16 +1,20 @@
 import { html, LitElement, TemplateResult } from "lit";
-import { customElement, query } from "lit/decorators.js";
-import { SuccessEventName } from "./event.success.js";
-import { WarningEventName } from "./event.warning.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { ReadingBeeToast } from "./component.toast.js";
+import { SuccessEventName } from "./event.success.js";
+import { AppView } from "./event.view.js";
+import { pathForView, viewFromPath } from "./nav.js";
+import { WarningEventName } from "./event.warning.js";
 import { appStore } from "./store.js";
 import "./component.onboarding.js";
 import "./component.toast.js";
 import "./page.reading.js";
+import "./page.settings.js";
 
 @customElement("reading-bee-app")
 export class ReadingBeeApp extends LitElement {
   @query("reading-bee-toast") private toast!: ReadingBeeToast;
+  @state() private view: AppView = viewFromPath();
 
   override createRenderRoot(): HTMLElement {
     return this;
@@ -21,6 +25,7 @@ export class ReadingBeeApp extends LitElement {
     appStore.addEventListener("change", this.onStoreChange);
     document.addEventListener(WarningEventName.value, this.onWarning);
     document.addEventListener(SuccessEventName.value, this.onSuccess);
+    window.addEventListener("popstate", this.onPopState);
     this.registerServiceWorker();
   }
 
@@ -29,25 +34,36 @@ export class ReadingBeeApp extends LitElement {
     appStore.removeEventListener("change", this.onStoreChange);
     document.removeEventListener(WarningEventName.value, this.onWarning);
     document.removeEventListener(SuccessEventName.value, this.onSuccess);
+    window.removeEventListener("popstate", this.onPopState);
   }
 
   override render(): TemplateResult {
     const ready = Boolean(appStore.currentProfile);
+    const page = !ready
+      ? html`
+          <reading-bee-onboarding></reading-bee-onboarding>
+        `
+      : this.view === "settings"
+        ? html`
+            <reading-bee-settings></reading-bee-settings>
+          `
+        : html`
+            <reading-bee-reading></reading-bee-reading>
+          `;
     return html`
-      ${
-        ready
-          ? html`
-              <reading-bee-reading></reading-bee-reading>
-            `
-          : html`
-              <reading-bee-onboarding></reading-bee-onboarding>
-            `
-      }
+      ${page}
       <reading-bee-toast></reading-bee-toast>
     `;
   }
 
   private onStoreChange = (): void => {
+    if (!appStore.currentProfile && this.view === "settings") {
+      const path = pathForView("reading");
+      if (window.location.pathname !== path) {
+        window.history.replaceState({ view: "reading" }, "", path);
+      }
+      this.view = "reading";
+    }
     this.requestUpdate();
   };
 
@@ -65,6 +81,10 @@ export class ReadingBeeApp extends LitElement {
     if (!("serviceWorker" in navigator)) return;
     void navigator.serviceWorker.register("/sw.js");
   }
+
+  private onPopState = (): void => {
+    this.view = viewFromPath();
+  };
 }
 
 declare global {

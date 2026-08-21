@@ -3,7 +3,7 @@ import puppeteer from "puppeteer-core";
 const BASE = process.env.READING_BEE_URL ?? "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const readingSettings = ["reading-bee-reading", "shadow", "reading-bee-settings", "shadow"];
+const readingSettings = ["reading-bee-settings", "shadow"];
 const readingProfile = ["reading-bee-reading", "shadow", "reading-bee-profile-modal", "shadow"];
 
 const withPage = async (page, path, fn, ...args) => {
@@ -156,38 +156,24 @@ try {
   if (profileName !== "Ava") {
     throw new Error(`Profile modal showed ${profileName}`);
   }
-  await withPage(
-    page,
-    [...readingProfile, "reading-bee-modal", "shadow", "button.close-button"],
-    "node.click();",
-  );
+  await withPage(page, [...readingProfile, "reading-bee-modal", "shadow", "button.close-button"], "node.click();");
   await page.waitForFunction(() => document.body.style.overflow !== "hidden");
 
-  await click(page, ["reading-bee-reading", "shadow", "button.icon-btn"]);
-  await page.waitForFunction(() =>
-    Boolean(
-      document
-        .querySelector("reading-bee-reading")
-        ?.shadowRoot?.querySelector("reading-bee-settings")
-        ?.shadowRoot?.querySelector("reading-bee-passcode"),
-    ),
-  );
-  const settingsPasscode = ["reading-bee-reading", "shadow", "reading-bee-settings", "shadow", "reading-bee-passcode"];
+  await sleep(400);
+  await click(page, ["reading-bee-reading", "shadow", 'button[aria-label="Settings"]']);
+  await page.waitForFunction(() => window.location.pathname.startsWith("/settings"), { timeout: 8000 });
+  await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
+  const settingsPasscode = ["reading-bee-settings", "shadow", "reading-bee-passcode"];
   await enterPin(page, settingsPasscode, "1234");
   await page.waitForFunction(() => {
-    const pad = document
-      .querySelector("reading-bee-reading")
-      ?.shadowRoot?.querySelector("reading-bee-settings")
-      ?.shadowRoot?.querySelector("reading-bee-passcode");
+    const pad = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("reading-bee-passcode");
     const title = pad?.shadowRoot?.querySelector("h2")?.textContent;
     return title?.includes("Confirm");
   });
   await enterPin(page, settingsPasscode, "1234");
-  await page.waitForFunction(() => {
-    const settings = document.querySelector("reading-bee-reading")?.shadowRoot?.querySelector("reading-bee-settings")
-      ?.shadowRoot;
-    return settings?.querySelector("h1")?.textContent.includes("Settings");
-  });
+  await page.waitForFunction(() =>
+    Boolean(document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".profile-card")),
+  );
 
   await typeInto(page, [...readingSettings, "input[placeholder='Profile name']"], "Max");
   await withPage(
@@ -203,19 +189,12 @@ try {
      add.click();`,
   );
   await page.waitForFunction(() => {
-    const cards = document
-      .querySelector("reading-bee-reading")
-      ?.shadowRoot?.querySelector("reading-bee-settings")
-      ?.shadowRoot?.querySelectorAll(".profile-card");
+    const cards = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelectorAll(".profile-card");
     return (cards?.length ?? 0) >= 2;
   });
 
-  await withPage(
-    page,
-    [...readingSettings, "reading-bee-modal", "shadow", "button.close-button"],
-    "node.click();",
-  );
-  await page.waitForFunction(() => document.body.style.overflow !== "hidden");
+  await click(page, ["reading-bee-settings", "shadow", "button.back"]);
+  await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
 
   await click(page, ["reading-bee-reading", "shadow", "button.avatar"]);
   await withPage(

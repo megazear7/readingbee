@@ -19,6 +19,22 @@ export const xIcon = html`
   </svg>
 `;
 
+export const backIcon = html`
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    width="22"
+    height="22"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+`;
+
 export const gearIcon = html`
   <svg
     xmlns="http://www.w3.org/2000/svg"

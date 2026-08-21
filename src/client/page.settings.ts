@@ -1,17 +1,16 @@
 import { css, html, LitElement, TemplateResult } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { COLOR_PAIRS } from "../shared/colors.js";
 import { Profile, ReadingBand } from "../shared/type.app.js";
-import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
 import { WarningEvent } from "./event.warning.js";
-import { downloadIcon, plusIcon, trashIcon } from "./icons.js";
+import { backIcon, downloadIcon, plusIcon, trashIcon } from "./icons.js";
+import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { dispatch } from "./util.events.js";
-import "./component.modal.js";
 import "./component.passcode.js";
 
 const BANDS: { id: ReadingBand; label: string }[] = [
@@ -26,8 +25,63 @@ export class ReadingBeeSettings extends LitElement {
   static override styles = [
     globalStyles,
     css`
+      :host {
+        display: block;
+        min-height: 100%;
+      }
+
+      .page {
+        min-height: 100dvh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: calc(0.7rem + env(safe-area-inset-top)) 1rem 0.8rem;
+        background: linear-gradient(to bottom, #0c0b09 70%, rgba(12, 11, 9, 0.86));
+        border-bottom: 1px solid var(--color-panel-border);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .back {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: var(--color-primary-text);
+        background: #1a1713;
+        border: 1px solid var(--color-panel-border);
+      }
+
+      .back:hover {
+        color: var(--color-1);
+      }
+
+      .body {
+        width: min(640px, 100%);
+        margin: 0 auto;
+        padding: 1.2rem 1.2rem calc(2rem + env(safe-area-inset-bottom));
+      }
+
+      .gate {
+        min-height: 60dvh;
+        display: grid;
+        place-items: center;
+      }
+
       h2 {
-        margin-top: 1.4rem;
+        margin-top: 1.6rem;
       }
 
       .stack {
@@ -110,7 +164,6 @@ export class ReadingBeeSettings extends LitElement {
     `,
   ];
 
-  @query("reading-bee-modal") private modal!: ReadingBeeModal;
   @state() private unlocked = false;
   @state() private creating = false;
   @state() private pendingPasscode = "";
@@ -129,22 +182,33 @@ export class ReadingBeeSettings extends LitElement {
 
   override render(): TemplateResult {
     return html`
-      <reading-bee-modal wide @ModelClosing=${this.reset}>
-        <slot name="open-button" slot="open-button"></slot>
-        <div slot="body">${this.unlocked ? this.settingsView() : this.gateView()}</div>
-      </reading-bee-modal>
+      <div class="page">
+        <header>
+          <button class="back" aria-label="Back" @click=${this.close}>${backIcon}</button>
+          <h1>Settings</h1>
+        </header>
+        <div class="body">
+          ${
+            this.unlocked
+              ? this.settingsView()
+              : html`
+                  <div class="gate">${this.gateView()}</div>
+                `
+          }
+        </div>
+      </div>
     `;
   }
 
-  open(): void {
-    void this.modal.open();
-  }
+  private close = (): void => {
+    navigate("reading");
+  };
 
   private gateView(): TemplateResult {
     const creating = this.creating || !appStore.hasPasscode();
     return html`
       <reading-bee-passcode
-        title=${creating ? (this.pendingPasscode ? "Confirm passcode" : "Create passcode") : "Settings"}
+        title=${creating ? (this.pendingPasscode ? "Confirm passcode" : "Create passcode") : "Enter passcode"}
         hint=${creating ? "This passcode unlocks settings and profile switching" : "Enter the instructor passcode"}
         @complete=${creating ? this.onCreate : this.onUnlock}></reading-bee-passcode>
     `;
@@ -185,7 +249,6 @@ export class ReadingBeeSettings extends LitElement {
       `;
     }
     return html`
-      <h1>Settings</h1>
       <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>Update passcode</button>
       <h2>Profiles</h2>
       <div class="stack">${appStore.state.profiles.map((profile) => this.profileCard(profile))}</div>
@@ -332,7 +395,7 @@ export class ReadingBeeSettings extends LitElement {
       return;
     }
     appStore.wipeAll();
-    void this.modal.close();
+    navigate("reading");
   };
 
   private onNewName = (event: Event): void => {
@@ -372,16 +435,5 @@ export class ReadingBeeSettings extends LitElement {
     link.click();
     URL.revokeObjectURL(url);
     dispatch(this, SuccessEvent("Downloaded reading-bee-data.json"));
-  };
-
-  private reset = (): void => {
-    this.unlocked = false;
-    this.creating = false;
-    this.pendingPasscode = "";
-    this.updatingPasscode = false;
-    this.passcodeStep = "current";
-    this.nextPasscode = "";
-    this.wipeStep = "none";
-    this.pendingDeleteId = null;
   };
 }
