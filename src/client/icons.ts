@@ -48,6 +48,18 @@ export const gearIcon = html`
   </svg>
 `;
 
+export const uploadIcon = html`
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path
+      d="M12 21V8M12 8L7 13M12 8L17 13"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round" />
+    <path d="M4 4H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+  </svg>
+`;
+
 export const downloadIcon = html`
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <path

@@ -137,6 +137,19 @@ export class AppStore extends EventTarget {
     return JSON.stringify(this.state, null, 2);
   }
 
+  importState(next: AppState): void {
+    const profiles = next.profiles.map((profile) => ensureCurrentText(profile, corpus));
+    const currentProfileId = profiles.some((profile) => profile.id === next.currentProfileId)
+      ? next.currentProfileId
+      : (profiles[0]?.id ?? null);
+    this.state = {
+      ...next,
+      profiles,
+      currentProfileId,
+    };
+    this.persist();
+  }
+
   wipeAll(): void {
     this.instructorUnlocked = false;
     clearState(this.storage);

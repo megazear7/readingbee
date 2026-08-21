@@ -31,6 +31,10 @@ export const loadState = (storage: StorageLike): AppState => {
   }
 };
 
+export const parseAppDataJson = (raw: string): AppState => {
+  return AppState.parse(JSON.parse(raw));
+};
+
 export const saveState = (storage: StorageLike, state: AppState): void => {
   storage.setItem(STORAGE_KEY, JSON.stringify(state));
 };

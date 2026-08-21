@@ -2,11 +2,13 @@ import { AppView } from "./event.view.js";
 
 export const pathForView = (view: AppView): string => {
   if (view === "add-profile") return "/settings/new";
+  if (view === "upload") return "/settings/upload";
   if (view === "settings") return "/settings";
   return "/";
 };
 
 export const viewFromPath = (pathname = window.location.pathname): AppView => {
+  if (pathname.startsWith("/settings/upload")) return "upload";
   if (pathname.startsWith("/settings/new")) return "add-profile";
   if (pathname.startsWith("/settings")) return "settings";
   return "reading";

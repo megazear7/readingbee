@@ -6,7 +6,7 @@ import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
-import { backIcon, downloadIcon, trashIcon } from "./icons.js";
+import { backIcon, downloadIcon, trashIcon, uploadIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -173,6 +173,12 @@ export class ReadingBeeSettings extends LitElement {
         color: var(--color-danger);
       }
 
+      .data-actions {
+        display: flex;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+      }
+
       .skeleton {
         width: 100%;
         min-height: 58px;
@@ -300,7 +306,10 @@ export class ReadingBeeSettings extends LitElement {
         </button>
       </div>
       <h2>App data</h2>
-      <button class="ghost-btn" @click=${this.download}>${downloadIcon} Download JSON</button>
+      <div class="data-actions">
+        <button class="ghost-btn" @click=${this.download}>${downloadIcon} Download</button>
+        <button class="ghost-btn" @click=${() => navigate("upload")}>${uploadIcon} Upload</button>
+      </div>
       <div class="danger">
         <h2>Danger zone</h2>
         <p>Permanently delete all Reading Bee data on this device.</p>

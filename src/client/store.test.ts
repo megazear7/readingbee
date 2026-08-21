@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { STARTING_LEVEL } from "../shared/algorithm.js";
-import { memoryStorage } from "../shared/storage.js";
+import { memoryStorage, parseAppDataJson } from "../shared/storage.js";
 import { AppStore } from "./store.js";
 
 describe("AppStore", () => {
@@ -42,5 +42,20 @@ describe("AppStore", () => {
     store.wipeAll();
     assert.equal(store.state.profiles.length, 0);
     assert.equal(store.currentProfile, null);
+  });
+
+  it("replaces all data on import", () => {
+    const source = new AppStore(memoryStorage());
+    source.createFirstProfile("Ava", "words");
+    source.addProfile("Max", "books");
+    source.setPasscode("1357");
+    const exported = source.exportJson();
+
+    const target = new AppStore(memoryStorage());
+    target.createFirstProfile("Old", "phrases");
+    target.importState(parseAppDataJson(exported));
+    assert.equal(target.state.profiles.length, 2);
+    assert.equal(target.state.profiles[0]?.name, "Ava");
+    assert.equal(target.verifyPasscode("1357"), true);
   });
 });

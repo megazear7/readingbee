@@ -11,6 +11,7 @@ import "./component.toast.js";
 import "./page.add-profile.js";
 import "./page.reading.js";
 import "./page.settings.js";
+import "./page.upload.js";
 
 @customElement("reading-bee-app")
 export class ReadingBeeApp extends LitElement {
@@ -44,17 +45,21 @@ export class ReadingBeeApp extends LitElement {
       ? html`
           <reading-bee-onboarding></reading-bee-onboarding>
         `
-      : this.view === "add-profile"
+      : this.view === "upload"
         ? html`
-            <reading-bee-add-profile></reading-bee-add-profile>
+            <reading-bee-upload></reading-bee-upload>
           `
-        : this.view === "settings"
+        : this.view === "add-profile"
           ? html`
-              <reading-bee-settings></reading-bee-settings>
+              <reading-bee-add-profile></reading-bee-add-profile>
             `
-          : html`
-              <reading-bee-reading></reading-bee-reading>
-            `;
+          : this.view === "settings"
+            ? html`
+                <reading-bee-settings></reading-bee-settings>
+              `
+            : html`
+                <reading-bee-reading></reading-bee-reading>
+              `;
     return html`
       ${page}
       <reading-bee-toast></reading-bee-toast>
