@@ -119,10 +119,9 @@ export class ReadingBeeReading extends LitElement {
 
       .picture {
         width: min(42vw, 176px);
-        aspect-ratio: 1;
-        object-fit: cover;
-        border-radius: 28px;
-        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+        height: min(42vw, 176px);
+        object-fit: contain;
+        filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.38));
       }
 
       .prompt[data-kind="letter"] {
