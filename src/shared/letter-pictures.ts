@@ -1,4 +1,4 @@
-import { hasMasteredText } from "./algorithm.js";
+import { hasMasteredText, latestResult } from "./algorithm.js";
 import { LETTERS_MAX_LEVEL, Profile, ReadingText } from "./type.app.js";
 
 export const PICTURE_MAX_LEVEL = LETTERS_MAX_LEVEL;
@@ -40,8 +40,16 @@ export const pictureFor = (text: ReadingText, profile?: Profile): string | undef
   if (text.kind !== "letter" || text.level > PICTURE_MAX_LEVEL) {
     return undefined;
   }
-  if (profile && hasMasteredText(profile, text.id)) {
+  const picture = LETTER_PICTURES[text.text.trim().toLowerCase()];
+  if (!picture || !profile) {
+    return picture;
+  }
+  const latest = latestResult(profile, text.id);
+  if (latest === "wrong") {
+    return picture;
+  }
+  if (latest === "right" || latest === "wayTooEasy" || hasMasteredText(profile, text.id)) {
     return undefined;
   }
-  return LETTER_PICTURES[text.text.trim().toLowerCase()];
+  return picture;
 };

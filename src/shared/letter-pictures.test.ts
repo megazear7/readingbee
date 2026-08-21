@@ -39,7 +39,40 @@ describe("pictureFor", () => {
     const a = letter("a");
     assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
     profile.textStats[a.id] = { ...emptyTextStat(a.id), correct: 1 };
+    profile.events.push({
+      id: "e1",
+      textId: a.id,
+      text: a.text,
+      level: a.level,
+      result: "right",
+      at: new Date().toISOString(),
+    });
     assert.equal(pictureFor(a, profile), undefined);
+  });
+
+  it("brings the picture back after a mastered letter is missed", () => {
+    const profile = createProfile("Ava", "letters", []);
+    const a = letter("a");
+    profile.textStats[a.id] = { ...emptyTextStat(a.id), correct: 1, wrong: 1 };
+    profile.events.push(
+      {
+        id: "e1",
+        textId: a.id,
+        text: a.text,
+        level: a.level,
+        result: "right",
+        at: new Date().toISOString(),
+      },
+      {
+        id: "e2",
+        textId: a.id,
+        text: a.text,
+        level: a.level,
+        result: "wrong",
+        at: new Date().toISOString(),
+      },
+    );
+    assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
   });
 
   it("hides pictures once the text is past the letter levels", () => {

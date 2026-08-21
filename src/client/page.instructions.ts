@@ -105,6 +105,10 @@ export class ReadingBeeInstructions extends LitElement {
               <li>Tap the blue raindrop if they need more practice. It works the same as a wrong answer.</li>
               <li>Use Skip if you want a different prompt.</li>
               <li>Use Way too easy if the work is far below what they can read.</li>
+              <li>
+                The gold level badge never goes down. If they start missing items, Reading Bee brings back easier
+                letters and words they already mastered — including letter pictures — so they can refresh those skills.
+              </li>
             </ul>
             <h2>Keyboard shortcuts</h2>
             <ul>

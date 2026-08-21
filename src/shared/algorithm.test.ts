@@ -193,9 +193,9 @@ describe("applyResult", () => {
     assert.equal(profile.correctStreak, 0);
   });
 
-  it("makes a wrong text more likely, but not immediately", () => {
-    const text = byId["t-1-2"];
-    let profile = createProfile("Ava", "letters", []);
+  it("makes a wrong word more likely, but not immediately", () => {
+    const text = byId["t-12-2"];
+    let profile = { ...createProfile("Ava", "words", []), level: 12, boostLevel: 12 };
     profile = applyResult(profile, text, "wrong", seedRng(4), new Date(), corpus);
     assert.ok(textWeight(profile.textStats[text.id]) > 1);
     assert.ok(profile.textStats[text.id].cooldown >= ALGORITHM.wrongCooldownMin);
@@ -203,12 +203,35 @@ describe("applyResult", () => {
     assert.notEqual(next.id, text.id);
   });
 
-  it("drops a level after enough consecutive wrongs", () => {
+  it("keeps the level after consecutive wrongs", () => {
     let profile = { ...createProfile("Ava", "phrases", []), level: STARTING_LEVEL.phrases };
-    for (let i = 0; i < ALGORITHM.levelDownStreak; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       profile = applyResult(profile, byId[`t-${STARTING_LEVEL.phrases}-${i}`], "wrong", seedRng(6), new Date(), corpus);
     }
-    assert.equal(profile.level, STARTING_LEVEL.phrases - 1);
+    assert.equal(profile.level, STARTING_LEVEL.phrases);
+    assert.equal(profile.wrongStreak, 3);
+  });
+
+  it("returns a missed letter so its picture can come back", () => {
+    let profile = createProfile("Ava", "letters", []);
+    profile = score(profile, "t-1-0", "right");
+    profile = score(profile, "t-1-0", "wrong");
+    assert.equal(profile.level, 1);
+    const next = pickNext(profile, corpus, seedRng(5));
+    assert.equal(next.id, "t-1-0");
+  });
+
+  it("picks easier mastered text after a wrong without lowering the level", () => {
+    let profile = { ...createProfile("Ava", "words", []), level: 19, boostLevel: 19 };
+    for (let i = 0; i < 8; i += 1) {
+      profile = score(profile, `t-19-${i}`, "right");
+    }
+    profile = { ...profile, level: 20, boostLevel: 20, currentTextId: null };
+    profile = score(profile, "t-20-0", "wrong");
+    assert.equal(profile.level, 20);
+    const next = pickNext(profile, corpus, seedRng(7));
+    assert.equal(next.level, 19);
+    assert.notEqual(next.id, "t-20-0");
   });
 
   it("does not jump letter levels on way too easy", () => {

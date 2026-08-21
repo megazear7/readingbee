@@ -31,8 +31,8 @@ const LEGACY_STARTING_LEVEL: Record<Exclude<ReadingBand, "letters">, number> = {
 export const ALGORITHM = {
   retireCorrectCount: 3,
   levelUpStreak: 50,
-  levelDownStreak: 3,
   easyJump: 8,
+  reviewMaxDepth: 8,
   wrongCooldownMin: 2,
   wrongCooldownMax: 5,
   recentWindow: 3,
@@ -41,6 +41,14 @@ export const ALGORITHM = {
 } as const;
 
 export const isLetterLevel = (level: number): boolean => level <= LETTERS_MAX_LEVEL;
+
+export const bandFloor = (level: number): number => {
+  if (level <= LETTERS_MAX_LEVEL) return STARTING_LEVEL.letters;
+  if (level < STARTING_LEVEL.phrases) return STARTING_LEVEL.words;
+  if (level < STARTING_LEVEL.sentences) return STARTING_LEVEL.phrases;
+  if (level < STARTING_LEVEL.books) return STARTING_LEVEL.sentences;
+  return STARTING_LEVEL.books;
+};
 
 export type Rng = {
   random: () => number;
@@ -204,6 +212,9 @@ const isLetterCycleEligible = (profile: Profile, text: ReadingText, relax: "stri
   if (stat.cooldown > 0) {
     return false;
   }
+  if (needsSupport(profile, text.id)) {
+    return true;
+  }
   if (text.id === profile.lastTextId) {
     return false;
   }
@@ -246,6 +257,20 @@ export const hasMasteredText = (profile: Profile, textId: string): boolean => {
   return Boolean(stat && (stat.correct > 0 || stat.wayTooEasy > 0));
 };
 
+export const latestResult = (profile: Profile, textId: string): ResultKind | null => {
+  for (let i = profile.events.length - 1; i >= 0; i -= 1) {
+    const event = profile.events[i];
+    if (event.textId === textId && event.result !== "skip") {
+      return event.result;
+    }
+  }
+  return null;
+};
+
+export const needsSupport = (profile: Profile, textId: string): boolean => {
+  return latestResult(profile, textId) === "wrong";
+};
+
 export const levelCoverageComplete = (profile: Profile, corpus: ReadingText[], level: number): boolean => {
   const texts = corpus.filter((text) => text.level === level);
   if (texts.length === 0) {
@@ -267,6 +292,43 @@ const pickFrom = (
   return weightedPick(pool, profile, rng);
 };
 
+const pickReview = (profile: Profile, corpus: ReadingText[], rng: Rng): ReadingText | null => {
+  const target = workingLevel(profile);
+  const floor = bandFloor(target);
+  const depth = Math.min(Math.max(profile.wrongStreak, 1), ALGORITHM.reviewMaxDepth);
+  const tryLevel = (level: number, requireNotRecent: boolean): ReadingText | null => {
+    const pool = corpus.filter((text) => {
+      if (text.level !== level) {
+        return false;
+      }
+      if (!hasMasteredText(profile, text.id)) {
+        return false;
+      }
+      if (text.id === profile.lastTextId) {
+        return false;
+      }
+      if (requireNotRecent && profile.recentTextIds.includes(text.id)) {
+        return false;
+      }
+      return true;
+    });
+    return pool.length > 0 ? weightedPick(pool, profile, rng) : null;
+  };
+  for (const requireNotRecent of [true, false]) {
+    for (let distance = 1; distance <= depth; distance += 1) {
+      const level = target - distance;
+      if (level < floor) {
+        break;
+      }
+      const picked = tryLevel(level, requireNotRecent);
+      if (picked) {
+        return picked;
+      }
+    }
+  }
+  return null;
+};
+
 const pickLetterLevel = (profile: Profile, corpus: ReadingText[], rng: Rng): ReadingText => {
   const target = workingLevel(profile);
   const atLevel = corpus.filter((text) => text.level === target);
@@ -274,9 +336,10 @@ const pickLetterLevel = (profile: Profile, corpus: ReadingText[], rng: Rng): Rea
     return pickOpenLevel(profile, corpus, rng);
   }
 
+  const needsHelp = atLevel.filter((text) => needsSupport(profile, text.id));
   const unseen = atLevel.filter((text) => !hasSeenText(profile, text.id));
   const unmastered = atLevel.filter((text) => !hasMasteredText(profile, text.id));
-  const groups = [unseen, unmastered, atLevel];
+  const groups = [needsHelp, unseen, unmastered, atLevel];
 
   for (const group of groups) {
     const strict = pickFrom(group, profile, rng, (text) => isLetterCycleEligible(profile, text, "strict"));
@@ -286,6 +349,13 @@ const pickLetterLevel = (profile: Profile, corpus: ReadingText[], rng: Rng): Rea
     const relaxed = pickFrom(group, profile, rng, (text) => isLetterCycleEligible(profile, text, "repeat"));
     if (relaxed) {
       return relaxed;
+    }
+  }
+
+  if (profile.wrongStreak > 0) {
+    const reviewed = pickReview(profile, corpus, rng);
+    if (reviewed) {
+      return reviewed;
     }
   }
 
@@ -314,6 +384,12 @@ export const pickNext = (profile: Profile, corpus: ReadingText[], rng: Rng = def
   }
   if (isLetterLevel(workingLevel(profile))) {
     return pickLetterLevel(profile, corpus, rng);
+  }
+  if (profile.wrongStreak > 0) {
+    const reviewed = pickReview(profile, corpus, rng);
+    if (reviewed) {
+      return reviewed;
+    }
   }
   return pickOpenLevel(profile, corpus, rng);
 };
@@ -387,18 +463,17 @@ export const applyResult = (
   }
 
   stat.wrong += 1;
-  stat.cooldown = rng.int(ALGORITHM.wrongCooldownMin, ALGORITHM.wrongCooldownMax);
+  stat.retired = false;
+  stat.cooldown = text.kind === "letter" ? 0 : rng.int(ALGORITHM.wrongCooldownMin, ALGORITHM.wrongCooldownMax);
   stats = { ...stats, [text.id]: stat };
   const wasBoosting = next.boostActive;
   const wrongStreak = wasBoosting ? 1 : next.wrongStreak + 1;
-  const shouldDrop = !wasBoosting && wrongStreak >= ALGORITHM.levelDownStreak;
   return {
     ...next,
     textStats: stats,
     boostActive: false,
     correctStreak: 0,
-    wrongStreak: shouldDrop ? 0 : wrongStreak,
-    level: shouldDrop ? clampLevel(next.level - 1) : next.level,
+    wrongStreak,
   };
 };
 
