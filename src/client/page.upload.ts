@@ -289,7 +289,7 @@ export class ReadingBeeUpload extends LitElement {
     if (!this.parsed) return;
     await this.modal.close();
     appStore.importState(this.parsed);
-    dispatch(this, SuccessEvent("App data replaced"));
+    dispatch(this, SuccessEvent("Backup restored"));
     navigate("reading");
   };
 }

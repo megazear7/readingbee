@@ -43,51 +43,19 @@ export class ReadingBeeReading extends LitElement {
       }
 
       .avatar {
-        position: relative;
-        z-index: 1;
         font-weight: 700;
         font-size: 1.05rem;
         line-height: 1;
         letter-spacing: 0;
-        isolation: isolate;
+        box-shadow: 0 0 0 3px transparent;
         transition:
-          transform var(--time-normal) ease,
           box-shadow var(--time-normal) ease,
-          filter var(--time-normal) ease;
-      }
-
-      .avatar::before {
-        content: "";
-        position: absolute;
-        inset: -7px;
-        border-radius: 50%;
-        background: conic-gradient(from 0deg, transparent 0 58%, var(--color-1) 72%, #fff6d6 80%, transparent 92%);
-        opacity: 0;
-        z-index: -1;
-        filter: blur(0.3px);
-        pointer-events: none;
-        transition: opacity var(--time-normal) ease;
-        animation: avatarOrbit 1.5s linear infinite;
-        animation-play-state: paused;
+          transform var(--time-normal) ease;
       }
 
       .avatar:hover {
-        transform: scale(1.1);
-        filter: brightness(1.08);
-        box-shadow:
-          0 0 0 2px rgba(232, 184, 74, 0.4),
-          0 10px 26px rgba(232, 184, 74, 0.28);
-      }
-
-      .avatar:hover::before {
-        opacity: 1;
-        animation-play-state: running;
-      }
-
-      @keyframes avatarOrbit {
-        to {
-          transform: rotate(360deg);
-        }
+        transform: scale(1.08);
+        box-shadow: 0 0 0 3px var(--color-1);
       }
 
       .icon-btn {
@@ -287,13 +255,8 @@ export class ReadingBeeReading extends LitElement {
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .ripple,
-        .avatar::before {
+        .ripple {
           animation: none;
-        }
-
-        .avatar:hover::before {
-          opacity: 0;
         }
       }
 

@@ -6,10 +6,8 @@ import { Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
-import { SuccessEvent } from "./event.success.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
-import { dispatch } from "./util.events.js";
 import "./component.modal.js";
 import "./component.passcode.js";
 
@@ -289,7 +287,6 @@ export class ReadingBeeProfileModal extends LitElement {
   private finishSwitch(): void {
     if (this.switchingTo) {
       appStore.switchProfile(this.switchingTo);
-      dispatch(this, SuccessEvent("Switched profile"));
     }
     this.reset();
     void this.modal.close();

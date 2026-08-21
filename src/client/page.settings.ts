@@ -514,6 +514,6 @@ export class ReadingBeeSettings extends LitElement {
     link.download = "reading-bee-data.json";
     link.click();
     URL.revokeObjectURL(url);
-    dispatch(this, SuccessEvent("Downloaded reading-bee-data.json"));
+    dispatch(this, SuccessEvent("Backup downloaded"));
   };
 }
