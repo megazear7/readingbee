@@ -66,4 +66,10 @@ describe("offline precache", () => {
     assert.equal(assets.includes("/bundle.js"), true);
     assert.equal(assets.includes("/index.html"), true);
   });
+
+  it("takes over immediately so a new version does not wait for a hard refresh", () => {
+    assert.match(swSource, /skipWaiting/);
+    assert.match(swSource, /clients\.claim/);
+    assert.match(swSource, /cache: "reload"/);
+  });
 });

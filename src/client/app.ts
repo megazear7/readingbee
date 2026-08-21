@@ -7,6 +7,7 @@ import { AppView } from "./event.view.js";
 import { pathForView, viewFromPath } from "./nav.js";
 import { WarningEventName } from "./event.warning.js";
 import { appStore } from "./store.js";
+import { registerServiceWorker } from "./sw-update.js";
 import "./component.import-profile.js";
 import "./component.onboarding.js";
 import "./component.toast.js";
@@ -106,9 +107,7 @@ export class ReadingBeeApp extends LitElement {
   };
 
   private registerServiceWorker(): void {
-    if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
-    }
+    registerServiceWorker();
     this.preloadLetterPictures();
   }
 

@@ -8,6 +8,7 @@ import { checkIcon, gearIcon, raindropIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import { consumeAppUpdated } from "./sw-update.js";
 import "./component.coin-flight.js";
 import "./component.level-badge.js";
 import "./component.level-up.js";
@@ -114,6 +115,73 @@ export class ReadingBeeReading extends LitElement {
       .icon-btn:hover {
         opacity: 1;
         color: var(--color-primary-text);
+      }
+
+      .settings-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-width: 0;
+      }
+
+      .icon-btn.is-updated {
+        opacity: 1;
+        color: var(--color-1);
+      }
+
+      .icon-btn.is-updated svg {
+        animation: gearUpdate 900ms ease;
+      }
+
+      .update-chip {
+        padding: 0.28rem 0.6rem;
+        border-radius: 999px;
+        background: #1a1713;
+        border: 1px solid rgba(232, 184, 74, 0.45);
+        color: var(--color-1);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        animation: chipIn var(--time-normal) ease;
+      }
+
+      .update-chip.is-leaving {
+        opacity: 0;
+        transform: translateX(-6px);
+        transition:
+          opacity var(--time-normal) ease,
+          transform var(--time-normal) ease;
+      }
+
+      @keyframes gearUpdate {
+        0% {
+          transform: rotate(0deg) scale(1);
+        }
+        35% {
+          transform: rotate(-28deg) scale(1.18);
+        }
+        100% {
+          transform: rotate(360deg) scale(1);
+        }
+      }
+
+      @keyframes chipIn {
+        from {
+          opacity: 0;
+          transform: translateX(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .icon-btn.is-updated svg,
+        .update-chip {
+          animation: none;
+        }
       }
 
       .stage {
@@ -408,6 +476,8 @@ export class ReadingBeeReading extends LitElement {
   @state() private coinTargetX = 0;
   @state() private coinTargetY = 0;
   @state() private outgoingPicture: string | undefined;
+  @state() private appUpdated = false;
+  @state() private updateChipLeaving = false;
   private locked = false;
   private pendingLevelUp = 0;
   private rippleSeq = 0;
@@ -421,6 +491,16 @@ export class ReadingBeeReading extends LitElement {
     super.connectedCallback();
     appStore.lockInstructor();
     window.addEventListener("keydown", this.onKey);
+    if (consumeAppUpdated()) {
+      this.appUpdated = true;
+      window.setTimeout(() => {
+        this.updateChipLeaving = true;
+        window.setTimeout(() => {
+          this.appUpdated = false;
+          this.updateChipLeaving = false;
+        }, 280);
+      }, 5200);
+    }
   }
 
   override disconnectedCallback(): void {
@@ -439,7 +519,21 @@ export class ReadingBeeReading extends LitElement {
     return html`
       <div class="screen ${this.celebrating ? "is-celebrating" : ""}">
         <header>
-          <button class="icon-btn" aria-label="Settings" @click=${this.openSettings}>${gearIcon}</button>
+          <div class="settings-wrap">
+            <button
+              class="icon-btn ${this.appUpdated ? "is-updated" : ""}"
+              aria-label="Settings"
+              @click=${this.openSettings}>
+              ${gearIcon}
+            </button>
+            ${
+              this.appUpdated
+                ? html`
+                    <span class="update-chip ${this.updateChipLeaving ? "is-leaving" : ""}">App updated</span>
+                  `
+                : ""
+            }
+          </div>
           <div class="header-right">
             <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
             <button class="coins" aria-label="Shop" @click=${() => navigate("shop")}>
@@ -537,6 +631,8 @@ export class ReadingBeeReading extends LitElement {
   }
 
   private openSettings = (): void => {
+    this.appUpdated = false;
+    this.updateChipLeaving = false;
     appStore.lockInstructor();
     navigate("settings");
   };
