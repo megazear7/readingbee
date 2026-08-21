@@ -1,4 +1,4 @@
-const CACHE_NAME = "reading-bee-v3";
+const CACHE_NAME = "reading-bee-v4";
 const ASSETS = [
   "/",
   "/index.html",
@@ -6,6 +6,7 @@ const ASSETS = [
   "/app.css",
   "/manifest.json",
   "/sw.js",
+  "/apple.jpg",
   "/fonts/lexend-500.woff2",
   "/fonts/nunito-400.woff2",
   "/fonts/nunito-700.woff2",

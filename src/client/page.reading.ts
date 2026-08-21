@@ -1,6 +1,7 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { avatarStyle, profileInitial } from "../shared/colors.js";
+import { pictureFor } from "../shared/letter-pictures.js";
 import { ReadingText, ResultKind } from "../shared/type.app.js";
 import { StoreController } from "./controller.store.js";
 import { checkIcon, gearIcon, xIcon } from "./icons.js";
@@ -102,12 +103,37 @@ export class ReadingBeeReading extends LitElement {
         letter-spacing: 0.01em;
         max-width: 18ch;
         text-wrap: pretty;
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 0.75rem;
+      }
+
+      .prompt.has-picture {
+        max-width: min(16rem, 72vw);
+      }
+
+      .glyph {
+        display: block;
+      }
+
+      .picture {
+        width: min(42vw, 176px);
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 28px;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
       }
 
       .prompt[data-kind="letter"] {
         font-size: clamp(3.4rem, 14vw, 6.2rem);
         max-width: 8ch;
         letter-spacing: 0.04em;
+      }
+
+      .prompt[data-kind="letter"].has-picture {
+        font-size: clamp(2.4rem, 9vw, 4.2rem);
+        max-width: min(16rem, 72vw);
       }
 
       .prompt[data-kind="word"] {
@@ -337,14 +363,8 @@ export class ReadingBeeReading extends LitElement {
           </div>
         </header>
         <div class="stage">
-          <div class="prompt ${this.outgoing ? "enter" : ""}" data-kind=${text.kind}>${text.text}</div>
-          ${
-            this.outgoing
-              ? html`
-                  <div class="prompt leave" data-kind=${this.outgoing.kind}>${this.outgoing.text}</div>
-                `
-              : ""
-          }
+          ${this.promptView(text, this.outgoing ? "enter" : "")}
+          ${this.outgoing ? this.promptView(this.outgoing, "leave") : ""}
         </div>
         <footer>
           <div class="action">
@@ -373,6 +393,22 @@ export class ReadingBeeReading extends LitElement {
                   .originX=${this.badgeX}
                   .originY=${this.badgeY}
                   @done=${this.onCelebrateDone}></reading-bee-level-up>
+              `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  private promptView(text: ReadingText, extraClass: string): TemplateResult {
+    const picture = pictureFor(text);
+    return html`
+      <div class="prompt ${extraClass} ${picture ? "has-picture" : ""}" data-kind=${text.kind}>
+        <span class="glyph">${text.text}</span>
+        ${
+          picture
+            ? html`
+                <img class="picture" src=${picture} alt="" aria-hidden="true" />
               `
             : ""
         }
