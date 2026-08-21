@@ -256,8 +256,8 @@ export class ReadingBeeReading extends LitElement {
         border-radius: 50%;
         pointer-events: none;
         z-index: 8;
-        transform: translate(-50%, -50%) scale(0.72);
-        animation: scoreRipple 900ms ease-out forwards;
+        transform: translate(-50%, -50%) scale(1);
+        animation: scoreRipple 560ms ease-out forwards;
       }
 
       .ripple.yes {
@@ -278,11 +278,11 @@ export class ReadingBeeReading extends LitElement {
       @keyframes scoreRipple {
         0% {
           opacity: 0.95;
-          transform: translate(-50%, -50%) scale(0.72);
+          transform: translate(-50%, -50%) scale(1);
         }
         100% {
           opacity: 0;
-          transform: translate(-50%, -50%) scale(28);
+          transform: translate(-50%, -50%) scale(2.6);
         }
       }
 
@@ -415,7 +415,7 @@ export class ReadingBeeReading extends LitElement {
     this.ripples = [...this.ripples, { id, kind, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }];
     window.setTimeout(() => {
       this.ripples = this.ripples.filter((ripple) => ripple.id !== id);
-    }, 900);
+    }, 560);
   }
 
   private onKey = (event: KeyboardEvent): void => {
