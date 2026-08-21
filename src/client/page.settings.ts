@@ -305,7 +305,6 @@ export class ReadingBeeSettings extends LitElement {
       `;
     }
     return html`
-      <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>Update passcode</button>
       <h2>Profiles</h2>
       <div class="stack">
         ${appStore.state.profiles.map((profile) => this.profileCard(profile))}
@@ -316,6 +315,7 @@ export class ReadingBeeSettings extends LitElement {
       </div>
       <h2>App data</h2>
       <div class="data-actions">
+        <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>Update passcode</button>
         <button class="ghost-btn" @click=${this.download}>${downloadIcon} Download</button>
         <button class="ghost-btn" @click=${() => navigate("upload")}>${uploadIcon} Upload</button>
       </div>

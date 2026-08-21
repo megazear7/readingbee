@@ -97,10 +97,23 @@ export const globalStyles = css`
     border: 1px solid var(--color-panel-border);
   }
 
+  .ghost-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--color-1);
+    color: var(--color-primary-text);
+    background: #2c261f;
+  }
+
   .danger-btn {
     background: rgba(232, 93, 76, 0.12);
     color: var(--color-danger);
     border: 1px solid rgba(232, 93, 76, 0.35);
+  }
+
+  .danger-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(232, 93, 76, 0.22);
+    border-color: var(--color-danger);
   }
 
   .muted-btn {
