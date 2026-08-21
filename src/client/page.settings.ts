@@ -158,6 +158,10 @@ export class ReadingBeeSettings extends LitElement {
         background: rgba(232, 93, 76, 0.06);
       }
 
+      .danger h2 {
+        margin-top: 0;
+      }
+
       .confirm {
         display: grid;
         gap: 0.8rem;
