@@ -1,7 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { repeat } from "lit/directives/repeat.js";
-import { ResultKind } from "../shared/type.app.js";
+import { ReadingText, ResultKind } from "../shared/type.app.js";
 import { StoreController } from "./controller.store.js";
 import { checkIcon, gearIcon, xIcon } from "./icons.js";
 import { navigate } from "./nav.js";
@@ -56,26 +55,18 @@ export class ReadingBeeReading extends LitElement {
         display: grid;
         place-items: center;
         padding: 1rem;
-        transition: background-color 180ms ease;
-        border-radius: 28px;
-      }
-
-      .stage.flash-right {
-        background: rgba(125, 206, 130, 0.08);
-      }
-
-      .stage.flash-wrong {
-        background: rgba(232, 93, 76, 0.08);
+        overflow: hidden;
+        width: 100%;
       }
 
       .prompt {
+        grid-area: 1 / 1;
         font-family: var(--font-reading);
         font-weight: 500;
         text-align: center;
         line-height: 1.35;
         letter-spacing: 0.01em;
         max-width: 18ch;
-        animation: rise 280ms ease;
         text-wrap: pretty;
       }
 
@@ -100,14 +91,41 @@ export class ReadingBeeReading extends LitElement {
         line-height: 1.5;
       }
 
-      @keyframes rise {
+      .prompt.leave {
+        animation: slideOutLeft 360ms ease forwards;
+        pointer-events: none;
+      }
+
+      .prompt.enter {
+        animation: slideInRight 360ms ease forwards;
+      }
+
+      @keyframes slideOutLeft {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-48vw);
+        }
+      }
+
+      @keyframes slideInRight {
         from {
           opacity: 0;
-          transform: translateY(8px);
+          transform: translateX(48vw);
         }
         to {
           opacity: 1;
           transform: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .prompt.leave,
+        .prompt.enter {
+          animation: none;
         }
       }
 
@@ -183,7 +201,7 @@ export class ReadingBeeReading extends LitElement {
     `,
   ];
 
-  @state() private flash: "right" | "wrong" | null = null;
+  @state() private outgoing: ReadingText | null = null;
   private locked = false;
 
   constructor() {
@@ -221,14 +239,15 @@ export class ReadingBeeReading extends LitElement {
               style="background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);"></button>
           </reading-bee-profile-modal>
         </header>
-        <div class="stage ${this.flash ? `flash-${this.flash}` : ""}">
-          ${repeat(
-            [text],
-            (item) => item.id,
-            (item) => html`
-              <div class="prompt" data-kind=${item.kind}>${item.text}</div>
-            `,
-          )}
+        <div class="stage">
+          <div class="prompt ${this.outgoing ? "enter" : ""}" data-kind=${text.kind}>${text.text}</div>
+          ${
+            this.outgoing
+              ? html`
+                  <div class="prompt leave" data-kind=${this.outgoing.kind}>${this.outgoing.text}</div>
+                `
+              : ""
+          }
         </div>
         <footer>
           <div class="score">
@@ -252,15 +271,15 @@ export class ReadingBeeReading extends LitElement {
 
   private record(result: ResultKind): void {
     if (this.locked) return;
+    const current = appStore.currentText;
+    if (!current) return;
     this.locked = true;
-    if (result === "right" || result === "wrong") {
-      this.flash = result;
-    }
+    this.outgoing = current;
     appStore.record(result);
     window.setTimeout(() => {
-      this.flash = null;
+      this.outgoing = null;
       this.locked = false;
-    }, 220);
+    }, 360);
   }
 
   private onKey = (event: KeyboardEvent): void => {
