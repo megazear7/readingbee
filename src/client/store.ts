@@ -5,6 +5,7 @@ import { AppState, PASSCODE_LENGTH, Profile, ReadingBand, ReadingText, ResultKin
 
 export class AppStore extends EventTarget {
   state: AppState;
+  instructorUnlocked = false;
   private readonly storage: StorageLike;
 
   constructor(storage: StorageLike) {
@@ -53,9 +54,9 @@ export class AppStore extends EventTarget {
     this.persist();
   }
 
-  addProfile(name: string, band: ReadingBand): Profile {
+  addProfile(name: string, band: ReadingBand, colorPairIndex?: number): Profile {
     const used = this.state.profiles.map((profile) => profile.colorPairIndex);
-    const profile = ensureCurrentText(createProfile(name, band, used), corpus);
+    const profile = ensureCurrentText(createProfile(name, band, used, new Date(), colorPairIndex), corpus);
     this.state = {
       ...this.state,
       profiles: [...this.state.profiles, profile],
@@ -109,6 +110,10 @@ export class AppStore extends EventTarget {
     this.replaceProfile(recordAndPickNext(profile, text, result, corpus));
   }
 
+  unlockInstructor(): void {
+    this.instructorUnlocked = true;
+  }
+
   hasPasscode(): boolean {
     return Boolean(this.state.passcode);
   }
@@ -133,6 +138,7 @@ export class AppStore extends EventTarget {
   }
 
   wipeAll(): void {
+    this.instructorUnlocked = false;
     clearState(this.storage);
     this.state = loadState(this.storage);
     this.persist();

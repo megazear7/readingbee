@@ -1,15 +1,9 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { READING_BANDS } from "../shared/bands.js";
 import { ReadingBand } from "../shared/type.app.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
-
-const BANDS: { id: ReadingBand; label: string; detail: string }[] = [
-  { id: "words", label: "I read words", detail: "Cat, sun, jump" },
-  { id: "phrases", label: "I read phrases", detail: "The red hat" },
-  { id: "sentences", label: "I read sentences", detail: "The cat sat on the mat." },
-  { id: "books", label: "I read books", detail: "Short stories and pages" },
-];
 
 @customElement("reading-bee-onboarding")
 export class ReadingBeeOnboarding extends LitElement {
@@ -122,7 +116,7 @@ export class ReadingBeeOnboarding extends LitElement {
             <input type="text" maxlength="40" placeholder="Student name" .value=${this.name} @input=${this.onName} />
           </label>
           <div class="bands">
-            ${BANDS.map(
+            ${READING_BANDS.map(
               (band) => html`
                 <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
                   <strong>${band.label}</strong>

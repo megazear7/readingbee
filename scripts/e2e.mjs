@@ -3,7 +3,6 @@ import puppeteer from "puppeteer-core";
 const BASE = process.env.READING_BEE_URL ?? "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const readingSettings = ["reading-bee-settings", "shadow"];
 const readingProfile = ["reading-bee-reading", "shadow", "reading-bee-profile-modal", "shadow"];
 
 const withPage = async (page, path, fn, ...args) => {
@@ -175,19 +174,27 @@ try {
     Boolean(document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".profile-card")),
   );
 
-  await typeInto(page, [...readingSettings, "input[placeholder='Profile name']"], "Max");
+  await click(page, ["reading-bee-settings", "shadow", "button.skeleton"]);
+  await page.waitForSelector("reading-bee-add-profile", { timeout: 10000 });
+  await typeInto(page, ["reading-bee-add-profile", "shadow", "input"], "Max");
   await withPage(
     page,
-    [...readingSettings, "select"],
-    `node.value = "sentences"; node.dispatchEvent(new Event("change", { bubbles: true }));`,
+    ["reading-bee-add-profile", "shadow"],
+    `const bands = [...node.querySelectorAll("button.band")];
+     const sentences = bands.find((band) => band.textContent.includes("I read sentences"));
+     sentences.click();`,
   );
+  await page.waitForFunction(() => {
+    const button = document.querySelector("reading-bee-add-profile")?.shadowRoot?.querySelector("button.primary-btn");
+    return Boolean(button && !button.disabled);
+  });
   await withPage(
     page,
-    readingSettings,
-    `const buttons = [...node.querySelectorAll("button.primary-btn")];
-     const add = buttons.find((button) => button.textContent.includes("Add profile"));
-     add.click();`,
+    ["reading-bee-add-profile", "shadow", "button.primary-btn"],
+    "node.scrollIntoView(); node.click();",
   );
+  await page.waitForFunction(() => window.location.pathname === "/settings", { timeout: 8000 });
+  await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
   await page.waitForFunction(() => {
     const cards = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelectorAll(".profile-card");
     return (cards?.length ?? 0) >= 2;

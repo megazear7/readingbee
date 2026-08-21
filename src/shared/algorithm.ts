@@ -46,8 +46,8 @@ export const createProfile = (
   band: ReadingBand,
   usedColorIndexes: number[],
   now = new Date(),
+  colorPairIndex = nextColorPairIndex(usedColorIndexes),
 ): Profile => {
-  const colorPairIndex = nextColorPairIndex(usedColorIndexes);
   const colors = colorPairAt(colorPairIndex);
   const level = STARTING_LEVEL[band];
   return {

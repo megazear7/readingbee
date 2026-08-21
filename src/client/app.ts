@@ -8,6 +8,7 @@ import { WarningEventName } from "./event.warning.js";
 import { appStore } from "./store.js";
 import "./component.onboarding.js";
 import "./component.toast.js";
+import "./page.add-profile.js";
 import "./page.reading.js";
 import "./page.settings.js";
 
@@ -43,13 +44,17 @@ export class ReadingBeeApp extends LitElement {
       ? html`
           <reading-bee-onboarding></reading-bee-onboarding>
         `
-      : this.view === "settings"
+      : this.view === "add-profile"
         ? html`
-            <reading-bee-settings></reading-bee-settings>
+            <reading-bee-add-profile></reading-bee-add-profile>
           `
-        : html`
-            <reading-bee-reading></reading-bee-reading>
-          `;
+        : this.view === "settings"
+          ? html`
+              <reading-bee-settings></reading-bee-settings>
+            `
+          : html`
+              <reading-bee-reading></reading-bee-reading>
+            `;
     return html`
       ${page}
       <reading-bee-toast></reading-bee-toast>
@@ -57,7 +62,7 @@ export class ReadingBeeApp extends LitElement {
   }
 
   private onStoreChange = (): void => {
-    if (!appStore.currentProfile && this.view === "settings") {
+    if (!appStore.currentProfile && this.view !== "reading") {
       const path = pathForView("reading");
       if (window.location.pathname !== path) {
         window.history.replaceState({ view: "reading" }, "", path);

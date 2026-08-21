@@ -1,26 +1,18 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
-import { Profile, ReadingBand } from "../shared/type.app.js";
+import { Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
-import { WarningEvent } from "./event.warning.js";
-import { backIcon, downloadIcon, plusIcon, trashIcon } from "./icons.js";
+import { backIcon, downloadIcon, trashIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { dispatch } from "./util.events.js";
 import "./component.modal.js";
 import "./component.passcode.js";
-
-const BANDS: { id: ReadingBand; label: string }[] = [
-  { id: "words", label: "I read words" },
-  { id: "phrases", label: "I read phrases" },
-  { id: "sentences", label: "I read sentences" },
-  { id: "books", label: "I read books" },
-];
 
 @customElement("reading-bee-settings")
 export class ReadingBeeSettings extends LitElement {
@@ -180,14 +172,39 @@ export class ReadingBeeSettings extends LitElement {
         font-size: 0.85rem;
         color: var(--color-danger);
       }
+
+      .skeleton {
+        width: 100%;
+        min-height: 58px;
+        border-radius: 18px;
+        border: 2px dashed rgba(244, 234, 213, 0.28);
+        background: transparent;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.9rem;
+        color: var(--color-primary-text-muted);
+        font-weight: 700;
+      }
+
+      .skeleton:hover {
+        border-color: var(--color-1);
+        color: var(--color-primary-text);
+      }
+
+      .ghost-swatch {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px dashed rgba(244, 234, 213, 0.28);
+        flex: 0 0 auto;
+      }
     `,
   ];
 
-  @state() private unlocked = false;
+  @state() private unlocked = appStore.instructorUnlocked;
   @state() private creating = false;
   @state() private pendingPasscode = "";
-  @state() private newName = "";
-  @state() private newBand: ReadingBand = "words";
   @state() private updatingPasscode = false;
   @state() private passcodeStep: "current" | "next" | "confirm" = "current";
   @state() private nextPasscode = "";
@@ -275,19 +292,11 @@ export class ReadingBeeSettings extends LitElement {
     return html`
       <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>Update passcode</button>
       <h2>Profiles</h2>
-      <div class="stack">${appStore.state.profiles.map((profile) => this.profileCard(profile))}</div>
-      <h2>Add profile</h2>
       <div class="stack">
-        <input type="text" maxlength="40" placeholder="Profile name" .value=${this.newName} @input=${this.onNewName} />
-        <select @change=${this.onNewBand}>
-          ${BANDS.map(
-            (band) => html`
-              <option value=${band.id} ?selected=${this.newBand === band.id}>${band.label}</option>
-            `,
-          )}
-        </select>
-        <button class="primary-btn" ?disabled=${!this.newName.trim()} @click=${this.addProfile}>
-          ${plusIcon} Add profile
+        ${appStore.state.profiles.map((profile) => this.profileCard(profile))}
+        <button class="skeleton" @click=${() => navigate("add-profile")}>
+          <span class="ghost-swatch"></span>
+          Add Profile
         </button>
       </div>
       <h2>App data</h2>
@@ -387,6 +396,7 @@ export class ReadingBeeSettings extends LitElement {
       this.padFrom(event).shake();
       return;
     }
+    appStore.unlockInstructor();
     this.unlocked = true;
   };
 
@@ -405,6 +415,7 @@ export class ReadingBeeSettings extends LitElement {
       return;
     }
     appStore.setPasscode(value);
+    appStore.unlockInstructor();
     this.unlocked = true;
     dispatch(this, SuccessEvent("Passcode saved"));
   };
@@ -448,24 +459,6 @@ export class ReadingBeeSettings extends LitElement {
     }
     appStore.wipeAll();
     navigate("reading");
-  };
-
-  private onNewName = (event: Event): void => {
-    this.newName = (event.target as HTMLInputElement).value;
-  };
-
-  private onNewBand = (event: Event): void => {
-    this.newBand = (event.target as HTMLSelectElement).value as ReadingBand;
-  };
-
-  private addProfile = (): void => {
-    if (!this.newName.trim()) {
-      dispatch(this, WarningEvent("Enter a profile name"));
-      return;
-    }
-    appStore.addProfile(this.newName, this.newBand);
-    this.newName = "";
-    dispatch(this, SuccessEvent("Profile added"));
   };
 
   private removeProfile(id: string): void {
