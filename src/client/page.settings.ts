@@ -118,12 +118,18 @@ export class ReadingBeeSettings extends LitElement {
         font-weight: 700;
         font-size: 0.9rem;
         line-height: 1;
-        border: 2px solid rgba(244, 234, 213, 0.35);
+        border: 0;
+        box-shadow: 0 0 0 3px transparent;
         cursor: pointer;
+        overflow: hidden;
+        transition:
+          box-shadow var(--time-normal) ease,
+          transform var(--time-normal) ease;
       }
 
       .swatch:hover {
-        border-color: var(--color-1);
+        transform: scale(1.08);
+        box-shadow: 0 0 0 3px var(--color-1);
       }
 
       .grow {

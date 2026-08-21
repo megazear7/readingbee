@@ -120,6 +120,14 @@ try {
   if (!firstPrompt) {
     throw new Error("No reading prompt after onboarding");
   }
+  const firstPicture = await withPage(
+    page,
+    ["reading-bee-reading", "shadow", ".prompt img.picture"],
+    "return node.getAttribute('src');",
+  );
+  if (!firstPicture || !firstPicture.startsWith("/letters/") || !firstPicture.endsWith(".webp")) {
+    throw new Error(`Expected a letter picture, got ${firstPicture}`);
+  }
   const coinLabel = await textOf(page, ["reading-bee-reading", "shadow", "button.coins"]);
   if (!coinLabel.includes("0")) {
     throw new Error(`Coin counter showed ${coinLabel}`);
@@ -285,8 +293,21 @@ try {
     return !closing && document.body.style.overflow !== "hidden";
   });
 
+  const swatchBorder = await withPage(
+    page,
+    ["reading-bee-settings", "shadow", "button.swatch"],
+    "return getComputedStyle(node).borderTopWidth;",
+  );
+  if (swatchBorder !== "0px") {
+    throw new Error(`Settings swatch still has a border: ${swatchBorder}`);
+  }
+
   await click(page, ["reading-bee-settings", "shadow", "button.back"]);
   await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
+  const currentInitial = await textOf(page, ["reading-bee-reading", "shadow", "button.avatar"]);
+  if (currentInitial !== "M") {
+    throw new Error(`New profile was not selected, avatar showed ${currentInitial}`);
+  }
 
   await click(page, ["reading-bee-reading", "shadow", "button.coins"]);
   await page.waitForSelector("reading-bee-shop", { timeout: 10000 });
@@ -302,9 +323,9 @@ try {
     page,
     readingProfile,
     `const rows = [...node.querySelectorAll("button.row")];
-     const max = rows.find((row) => row.textContent.includes("Max"));
-     if (!max) throw new Error("Max profile missing");
-     max.click();`,
+     const ava = rows.find((row) => row.textContent.includes("Ava"));
+     if (!ava) throw new Error("Ava profile missing");
+     ava.click();`,
   );
   await page.waitForFunction(() =>
     Boolean(

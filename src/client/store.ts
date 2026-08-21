@@ -70,6 +70,7 @@ export class AppStore extends EventTarget {
     this.state = {
       ...this.state,
       profiles: [...this.state.profiles, profile],
+      currentProfileId: profile.id,
     };
     this.persist();
     return profile;

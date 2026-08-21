@@ -100,9 +100,9 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.clearRect(0, 0, width, height);
 
     const coin = this.coin;
-    const floor = height - 28 - coin.r;
+    const ceiling = Math.max(coin.r, this.targetY);
     if (!coin.seeking) {
-      coin.vy += 1680 * dt;
+      coin.vy -= 1680 * dt;
       coin.x += coin.vx * dt;
       coin.y += coin.vy * dt;
       coin.spin += coin.vs * dt;
@@ -114,8 +114,8 @@ export class ReadingBeeCoinFlight extends LitElement {
         coin.x = width - coin.r;
         coin.vx = -Math.abs(coin.vx) * 0.78;
       }
-      if (coin.y >= floor && coin.vy > 0) {
-        coin.y = floor;
+      if (coin.y <= ceiling && coin.vy < 0) {
+        coin.y = ceiling;
         coin.vy *= -0.58 - Math.random() * 0.16;
         coin.vx *= 0.82;
         coin.bounce += 1;

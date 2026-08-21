@@ -152,12 +152,6 @@ export const corpus = [
     kind: "letter",
   },
   {
-    id: "l003-005",
-    text: "q",
-    level: 3,
-    kind: "letter",
-  },
-  {
     id: "l003-006",
     text: "qu",
     level: 3,

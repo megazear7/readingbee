@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const letters = {
   1: ["a", "t", "s", "i", "p", "n", "m", "d", "g", "o"],
   2: ["c", "k", "e", "u", "r", "h", "b", "f", "l", "j"],
-  3: ["v", "w", "x", "y", "z", "q", "qu", "ck", "ff", "ll"],
+  3: ["v", "w", "x", "y", "z", "qu", "ck", "ff", "ll"],
   4: ["sh", "ch", "th", "wh", "ph", "ng", "nk", "ss", "zz", "tch"],
   5: ["bl", "cl", "fl", "gl", "pl", "sl", "sc", "sk", "sm", "sn"],
   6: ["br", "cr", "dr", "fr", "gr", "pr", "tr", "tw", "sw", "st"],

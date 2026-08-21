@@ -451,7 +451,8 @@ export class ReadingBeeReading extends LitElement {
   }
 
   private promptView(text: ReadingText, extraClass: string): TemplateResult {
-    const picture = pictureFor(text);
+    const profile = extraClass === "leave" ? undefined : (appStore.currentProfile ?? undefined);
+    const picture = pictureFor(text, profile);
     return html`
       <div class="prompt ${extraClass} ${picture ? "has-picture" : ""}" data-kind=${text.kind}>
         <span class="glyph">${text.text}</span>

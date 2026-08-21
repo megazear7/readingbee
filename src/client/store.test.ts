@@ -34,6 +34,7 @@ describe("AppStore", () => {
     const second = store.addProfile("Max", "sentences");
     assert.equal(store.state.profiles.length, 2);
     assert.equal(second.level, STARTING_LEVEL.sentences);
+    assert.equal(store.currentProfile?.name, "Max");
     store.setPasscode("2468");
     assert.equal(store.verifyPasscode("2468"), true);
     assert.equal(store.switchProfile(second.id), true);
