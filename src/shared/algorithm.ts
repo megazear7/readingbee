@@ -13,6 +13,14 @@ import {
 import { createId } from "./util.id.js";
 
 export const STARTING_LEVEL: Record<ReadingBand, number> = {
+  letters: 1,
+  words: 11,
+  phrases: 29,
+  sentences: 47,
+  books: 74,
+};
+
+const LEGACY_STARTING_LEVEL: Record<Exclude<ReadingBand, "letters">, number> = {
   words: 1,
   phrases: 22,
   sentences: 42,
@@ -39,6 +47,67 @@ export type Rng = {
 export const defaultRng: Rng = {
   random: () => Math.random(),
   int: (min, max) => min + Math.floor(Math.random() * (max - min + 1)),
+};
+
+export const clampLevel = (level: number): number => {
+  return Math.min(MAX_LEVEL, Math.max(MIN_LEVEL, Math.round(level)));
+};
+
+const remapRange = (level: number, oldMin: number, oldMax: number, newMin: number, newMax: number): number => {
+  return Math.round(newMin + ((level - oldMin) * (newMax - newMin)) / (oldMax - oldMin));
+};
+
+export const remapLegacyLevel = (level: number): number => {
+  const clamped = clampLevel(level);
+  if (clamped <= 20) return remapRange(clamped, 1, 20, 11, 28);
+  if (clamped <= 40) return remapRange(clamped, 21, 40, 29, 46);
+  if (clamped <= 70) return remapRange(clamped, 41, 70, 47, 73);
+  return remapRange(clamped, 71, 100, 74, 100);
+};
+
+export const migrateProfileFromV1 = (profile: Profile): Profile => {
+  const level = remapLegacyLevel(profile.level);
+  return {
+    ...profile,
+    level,
+    boostLevel: remapLegacyLevel(profile.boostLevel),
+    currentTextId: null,
+    lastTextId: null,
+    recentTextIds: [],
+    textStats: {},
+  };
+};
+
+export const normalizeImportedProfile = (profile: Profile): Profile => {
+  if (profile.band === "letters") {
+    return profile;
+  }
+  if (profile.events.length > 0) {
+    return profile;
+  }
+  if (profile.level !== LEGACY_STARTING_LEVEL[profile.band]) {
+    return profile;
+  }
+  const level = STARTING_LEVEL[profile.band];
+  return {
+    ...profile,
+    level,
+    boostLevel: level,
+    currentTextId: null,
+  };
+};
+
+export const setExactLevel = (profile: Profile, level: number): Profile => {
+  const next = clampLevel(level);
+  return {
+    ...profile,
+    level: next,
+    boostLevel: next,
+    boostActive: false,
+    correctStreak: 0,
+    wrongStreak: 0,
+    currentTextId: null,
+  };
 };
 
 export const createProfile = (
@@ -83,10 +152,6 @@ export const applyColorPair = (profile: Profile, colorPairIndex: number): Profil
 
 export const workingLevel = (profile: Profile): number => {
   return profile.boostActive ? profile.boostLevel : profile.level;
-};
-
-const clampLevel = (level: number): number => {
-  return Math.min(MAX_LEVEL, Math.max(MIN_LEVEL, Math.round(level)));
 };
 
 const getStat = (profile: Profile, textId: string): TextStat => {

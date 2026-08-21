@@ -7,6 +7,8 @@ import { checkIcon, gearIcon, xIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import "./component.level-badge.js";
+import "./component.level-up.js";
 import "./component.profile-modal.js";
 
 @customElement("reading-bee-reading")
@@ -19,6 +21,10 @@ export class ReadingBeeReading extends LitElement {
         min-height: 100%;
       }
 
+      .screen.is-celebrating header {
+        pointer-events: none;
+      }
+
       .screen {
         min-height: 100dvh;
         display: grid;
@@ -28,7 +34,15 @@ export class ReadingBeeReading extends LitElement {
 
       header {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.55rem;
+        position: relative;
+        z-index: 30;
+      }
+
+      .header-right {
+        display: flex;
         align-items: center;
         gap: 0.55rem;
       }
@@ -88,6 +102,12 @@ export class ReadingBeeReading extends LitElement {
         letter-spacing: 0.01em;
         max-width: 18ch;
         text-wrap: pretty;
+      }
+
+      .prompt[data-kind="letter"] {
+        font-size: clamp(3.4rem, 14vw, 6.2rem);
+        max-width: 8ch;
+        letter-spacing: 0.04em;
       }
 
       .prompt[data-kind="word"] {
@@ -269,6 +289,10 @@ export class ReadingBeeReading extends LitElement {
 
   @state() private outgoing: ReadingText | null = null;
   @state() private ripples: { id: number; kind: "yes" | "no"; x: number; y: number }[] = [];
+  @state() private celebrating = false;
+  @state() private celebrateLevel = 1;
+  @state() private badgeX = 0;
+  @state() private badgeY = 0;
   private locked = false;
   private rippleSeq = 0;
 
@@ -296,18 +320,21 @@ export class ReadingBeeReading extends LitElement {
       `;
     }
     return html`
-      <div class="screen">
+      <div class="screen ${this.celebrating ? "is-celebrating" : ""}">
         <header>
           <button class="icon-btn" aria-label="Settings" @click=${this.openSettings}>${gearIcon}</button>
-          <reading-bee-profile-modal>
-            <button
-              slot="open-button"
-              class="avatar"
-              aria-label="Profile"
-              style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
-              ${profileInitial(profile.name)}
-            </button>
-          </reading-bee-profile-modal>
+          <div class="header-right">
+            <reading-bee-profile-modal>
+              <button
+                slot="open-button"
+                class="avatar"
+                aria-label="Profile"
+                style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
+                ${profileInitial(profile.name)}
+              </button>
+            </reading-bee-profile-modal>
+            <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
+          </div>
         </header>
         <div class="stage">
           <div class="prompt ${this.outgoing ? "enter" : ""}" data-kind=${text.kind}>${text.text}</div>
@@ -338,6 +365,17 @@ export class ReadingBeeReading extends LitElement {
             <span class="ripple ${ripple.kind}" style="left:${ripple.x}px;top:${ripple.y}px"></span>
           `,
         )}
+        ${
+          this.celebrating
+            ? html`
+                <reading-bee-level-up
+                  .level=${this.celebrateLevel}
+                  .originX=${this.badgeX}
+                  .originY=${this.badgeY}
+                  @done=${this.onCelebrateDone}></reading-bee-level-up>
+              `
+            : ""
+        }
       </div>
     `;
   }
@@ -347,20 +385,40 @@ export class ReadingBeeReading extends LitElement {
   };
 
   private record(result: ResultKind, event?: Event): void {
-    if (this.locked) return;
+    if (this.locked || this.celebrating) return;
     const current = appStore.currentText;
     if (!current) return;
     if (result === "right" || result === "wrong") {
       this.spawnRipple(result === "right" ? "yes" : "no", event);
     }
+    const previousLevel = appStore.currentProfile?.level ?? 0;
     this.locked = true;
     this.outgoing = current;
     appStore.record(result);
+    const nextLevel = appStore.currentProfile?.level ?? 0;
+    if (nextLevel > previousLevel) {
+      this.startCelebration(nextLevel);
+    }
     window.setTimeout(() => {
       this.outgoing = null;
       this.locked = false;
     }, 360);
   }
+
+  private startCelebration(level: number): void {
+    const badge = this.renderRoot.querySelector("reading-bee-level-badge");
+    if (badge instanceof HTMLElement) {
+      const rect = badge.getBoundingClientRect();
+      this.badgeX = rect.left + rect.width / 2;
+      this.badgeY = rect.top + rect.height / 2;
+    }
+    this.celebrateLevel = level;
+    this.celebrating = true;
+  }
+
+  private onCelebrateDone = (): void => {
+    this.celebrating = false;
+  };
 
   private spawnRipple(kind: "yes" | "no", event?: Event): void {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {

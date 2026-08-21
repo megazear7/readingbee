@@ -154,6 +154,6 @@ export class ReadingBeeOnboarding extends LitElement {
 
   private start = (): void => {
     if (!this.name.trim()) return;
-    appStore.createFirstProfile(this.name, this.band ?? "words");
+    appStore.createFirstProfile(this.name, this.band ?? "letters");
   };
 }
