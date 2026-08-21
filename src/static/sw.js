@@ -1,4 +1,5 @@
-const CACHE_NAME = "reading-bee-v5";
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+const CACHE_NAME = "reading-bee-v6";
 const ASSETS = [
   "/",
   "/index.html",
@@ -47,11 +48,23 @@ const ASSETS = [
   "/logo/logo-original.png",
 ];
 
+const precache = async () => {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(
+    ASSETS.map(async (asset) => {
+      const response = await fetch(asset, { cache: "reload" });
+      if (!response.ok) {
+        throw new Error(`Failed to precache ${asset}: ${response.status}`);
+      }
+      await cache.put(asset, response);
+    }),
+  );
+};
+
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
+    precache().then(() => {
+      return self.skipWaiting();
     }),
   );
 });
@@ -67,30 +80,49 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+const matchCached = async (cache, request, url) => {
+  return (
+    (await cache.match(url.pathname)) ||
+    (await cache.match(request, { ignoreSearch: true })) ||
+    (await cache.match(url.pathname + url.search))
+  );
+};
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
   }
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, copy);
-        });
+    caches.open(CACHE_NAME).then(async (cache) => {
+      if (event.request.mode === "navigate") {
+        const page = (await cache.match("/index.html")) || (await cache.match("/"));
+        if (page) {
+          return page;
+        }
+      }
+
+      const cached = await matchCached(cache, event.request, url);
+      if (cached) {
+        return cached;
+      }
+
+      try {
+        const response = await fetch(event.request);
+        if (response.ok) {
+          await cache.put(url.pathname, response.clone());
+        }
         return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          if (cached) {
-            return cached;
-          }
-          if (event.request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
-          return Response.error();
-        });
-      }),
+      } catch {
+        if (event.request.mode === "navigate") {
+          return (await cache.match("/index.html")) || Response.error();
+        }
+        return Response.error();
+      }
+    }),
   );
 });
