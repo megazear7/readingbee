@@ -9,6 +9,7 @@ import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { dispatch } from "./util.events.js";
+import "./component.instructor-gate.js";
 import "./component.modal.js";
 
 @customElement("reading-bee-upload")
@@ -172,41 +173,43 @@ export class ReadingBeeUpload extends LitElement {
           <h1>Upload</h1>
         </header>
         <div class="body">
-          <p class="lede">Restore a Reading Bee backup. This will replace the data on this device.</p>
-          <button
-            class="drop ${this.dragging ? "dragging" : ""} ${ready ? "ready" : ""} ${this.error ? "error" : ""}"
-            @click=${this.openPicker}
-            @dragenter=${this.onDragEnter}
-            @dragover=${this.onDragOver}
-            @dragleave=${this.onDragLeave}
-            @drop=${this.onDrop}>
-            <span class="drop-icon">${uploadIcon}</span>
+          <reading-bee-instructor-gate>
+            <p class="lede">Restore a Reading Bee backup. This will replace the data on this device.</p>
+            <button
+              class="drop ${this.dragging ? "dragging" : ""} ${ready ? "ready" : ""} ${this.error ? "error" : ""}"
+              @click=${this.openPicker}
+              @dragenter=${this.onDragEnter}
+              @dragover=${this.onDragOver}
+              @dragleave=${this.onDragLeave}
+              @drop=${this.onDrop}>
+              <span class="drop-icon">${uploadIcon}</span>
+              ${
+                ready
+                  ? html`
+                      <strong>${this.fileName}</strong>
+                      <span class="file-meta">
+                        ${this.parsed!.profiles.length} profile${this.parsed!.profiles.length === 1 ? "" : "s"} ready to
+                        restore
+                      </span>
+                      <span class="browse">Choose a different file</span>
+                    `
+                  : html`
+                      <strong>Drop your backup here</strong>
+                      <span>JSON files from Reading Bee Download</span>
+                      <span class="browse">or click to browse</span>
+                    `
+              }
+            </button>
             ${
-              ready
+              this.error
                 ? html`
-                    <strong>${this.fileName}</strong>
-                    <span class="file-meta">
-                      ${this.parsed!.profiles.length} profile${this.parsed!.profiles.length === 1 ? "" : "s"} ready to
-                      restore
-                    </span>
-                    <span class="browse">Choose a different file</span>
+                    <p class="lede" style="color: var(--color-danger)">${this.error}</p>
                   `
-                : html`
-                    <strong>Drop your backup here</strong>
-                    <span>JSON files from Reading Bee Download</span>
-                    <span class="browse">or click to browse</span>
-                  `
+                : ""
             }
-          </button>
-          ${
-            this.error
-              ? html`
-                  <p class="lede" style="color: var(--color-danger)">${this.error}</p>
-                `
-              : ""
-          }
-          <button class="primary-btn" ?disabled=${!ready} @click=${this.openConfirm}>Submit</button>
-          <input class="hidden" type="file" accept="application/json,.json" @change=${this.onFileInput} />
+            <button class="primary-btn" ?disabled=${!ready} @click=${this.openConfirm}>Submit</button>
+            <input class="hidden" type="file" accept="application/json,.json" @change=${this.onFileInput} />
+          </reading-bee-instructor-gate>
         </div>
         <reading-bee-modal>
           <div slot="body" class="confirm">

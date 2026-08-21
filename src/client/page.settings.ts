@@ -11,6 +11,7 @@ import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { dispatch } from "./util.events.js";
+import "./component.instructor-gate.js";
 import "./component.modal.js";
 import "./component.passcode.js";
 
@@ -67,12 +68,6 @@ export class ReadingBeeSettings extends LitElement {
         width: min(640px, 100%);
         margin: 0 auto;
         padding: 1.2rem 1.2rem calc(2rem + env(safe-area-inset-bottom));
-      }
-
-      .gate {
-        min-height: 60dvh;
-        display: grid;
-        place-items: center;
       }
 
       h2 {
@@ -245,9 +240,6 @@ export class ReadingBeeSettings extends LitElement {
     `,
   ];
 
-  @state() private unlocked = appStore.instructorUnlocked;
-  @state() private creating = false;
-  @state() private pendingPasscode = "";
   @state() private updatingPasscode = false;
   @state() private passcodeStep: "current" | "next" | "confirm" = "current";
   @state() private nextPasscode = "";
@@ -269,13 +261,7 @@ export class ReadingBeeSettings extends LitElement {
           <h1>Settings</h1>
         </header>
         <div class="body">
-          ${
-            this.unlocked
-              ? this.settingsView()
-              : html`
-                  <div class="gate">${this.gateView()}</div>
-                `
-          }
+          <reading-bee-instructor-gate>${this.settingsView()}</reading-bee-instructor-gate>
         </div>
         <reading-bee-modal @ModelClosing=${this.closeColorPicker}>
           <div slot="body">${this.colorPickerBody()}</div>
@@ -287,16 +273,6 @@ export class ReadingBeeSettings extends LitElement {
   private close = (): void => {
     navigate("reading");
   };
-
-  private gateView(): TemplateResult {
-    const creating = this.creating || !appStore.hasPasscode();
-    return html`
-      <reading-bee-passcode
-        title=${creating ? (this.pendingPasscode ? "Confirm passcode" : "Create passcode") : "Enter passcode"}
-        hint=${creating ? "This passcode unlocks settings and profile switching" : "Enter the instructor passcode"}
-        @complete=${creating ? this.onCreate : this.onUnlock}></reading-bee-passcode>
-    `;
-  }
 
   private settingsView(): TemplateResult {
     if (this.updatingPasscode) {
@@ -435,36 +411,6 @@ export class ReadingBeeSettings extends LitElement {
   private padFrom(event: Event): ReadingBeePasscode {
     return event.currentTarget as ReadingBeePasscode;
   }
-
-  private onUnlock = (event: Event): void => {
-    const value = (event as CustomEvent<{ value: string }>).detail.value;
-    if (!appStore.verifyPasscode(value)) {
-      this.padFrom(event).shake();
-      return;
-    }
-    appStore.unlockInstructor();
-    this.unlocked = true;
-  };
-
-  private onCreate = (event: Event): void => {
-    const value = (event as CustomEvent<{ value: string }>).detail.value;
-    const pad = this.padFrom(event);
-    if (!this.pendingPasscode) {
-      this.pendingPasscode = value;
-      this.creating = true;
-      pad.reset();
-      return;
-    }
-    if (value !== this.pendingPasscode) {
-      this.pendingPasscode = "";
-      pad.shake();
-      return;
-    }
-    appStore.setPasscode(value);
-    appStore.unlockInstructor();
-    this.unlocked = true;
-    dispatch(this, SuccessEvent("Passcode saved"));
-  };
 
   private onUpdatePasscode = (event: Event): void => {
     const value = (event as CustomEvent<{ value: string }>).detail.value;

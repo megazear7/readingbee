@@ -11,6 +11,8 @@ import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { dispatch } from "./util.events.js";
 
+import "./component.instructor-gate.js";
+
 @customElement("reading-bee-add-profile")
 export class ReadingBeeAddProfile extends LitElement {
   static override styles = [
@@ -63,20 +65,13 @@ export class ReadingBeeAddProfile extends LitElement {
       .body {
         width: min(640px, 100%);
         margin: 0 auto;
-        padding: 1.2rem 1.2rem calc(2rem + env(safe-area-inset-bottom));
+        padding: 1.7rem 1.2rem calc(2rem + env(safe-area-inset-bottom));
         display: grid;
-        gap: 1.1rem;
-      }
-
-      label {
-        display: grid;
-        gap: 0.45rem;
-        font-size: 0.92rem;
-        color: var(--color-primary-text-muted);
+        gap: 1.5rem;
       }
 
       h2 {
-        margin: 0.2rem 0 0;
+        margin: 0.15rem 0 0;
         font-size: 0.92rem;
         font-weight: 400;
         letter-spacing: 0;
@@ -85,7 +80,12 @@ export class ReadingBeeAddProfile extends LitElement {
 
       .section {
         display: grid;
-        gap: 0.2rem;
+        gap: 0.06rem;
+      }
+
+      input[type="text"] {
+        font-size: 1.25rem;
+        padding: 0.45rem 0.75rem;
       }
 
       .bands {
@@ -143,6 +143,9 @@ export class ReadingBeeAddProfile extends LitElement {
       .primary-btn {
         width: 100%;
         margin-top: 0.4rem;
+        font-size: 1.25rem;
+        padding: 0.4rem 1rem;
+        min-height: 0;
       }
     `,
   ];
@@ -162,39 +165,41 @@ export class ReadingBeeAddProfile extends LitElement {
           <h1>Add profile</h1>
         </header>
         <div class="body">
-          <label>
-            Profile name
-            <input type="text" maxlength="40" placeholder="Student name" .value=${this.name} @input=${this.onName} />
-          </label>
-          <div class="section">
-            <h2>Reading level</h2>
-            <div class="bands">
-              ${READING_BANDS.map(
-                (band) => html`
-                  <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
-                    <strong>${band.label}</strong>
-                    <span>${band.detail}</span>
-                  </button>
-                `,
-              )}
+          <reading-bee-instructor-gate>
+            <div class="section">
+              <h2>Profile name</h2>
+              <input type="text" maxlength="40" placeholder="Student name" .value=${this.name} @input=${this.onName} />
             </div>
-          </div>
-          <div class="section">
-            <h2>Color pair</h2>
-            <div class="pairs">
-              ${COLOR_PAIRS.map(
-                (pair, index) => html`
-                  <button
-                    class="pair"
-                    ?selected=${this.colorPairIndex === index}
-                    style="background: linear-gradient(135deg, ${pair.primary} 0 50%, ${pair.secondary} 50% 100%);"
-                    aria-label="Color pair ${index + 1}"
-                    @click=${() => (this.colorPairIndex = index)}></button>
-                `,
-              )}
+            <div class="section">
+              <h2>Reading level</h2>
+              <div class="bands">
+                ${READING_BANDS.map(
+                  (band) => html`
+                    <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
+                      <strong>${band.label}</strong>
+                      <span>${band.detail}</span>
+                    </button>
+                  `,
+                )}
+              </div>
             </div>
-          </div>
-          <button class="primary-btn" ?disabled=${!canSave} @click=${this.save}>Add profile</button>
+            <div class="section">
+              <h2>Color pair</h2>
+              <div class="pairs">
+                ${COLOR_PAIRS.map(
+                  (pair, index) => html`
+                    <button
+                      class="pair"
+                      ?selected=${this.colorPairIndex === index}
+                      style="background: linear-gradient(135deg, ${pair.primary} 0 50%, ${pair.secondary} 50% 100%);"
+                      aria-label="Color pair ${index + 1}"
+                      @click=${() => (this.colorPairIndex = index)}></button>
+                  `,
+                )}
+              </div>
+            </div>
+            <button class="primary-btn" ?disabled=${!canSave} @click=${this.save}>Add profile</button>
+          </reading-bee-instructor-gate>
         </div>
       </div>
     `;

@@ -112,6 +112,7 @@ export class AppStore extends EventTarget {
 
   unlockInstructor(): void {
     this.instructorUnlocked = true;
+    this.dispatchEvent(new Event("change"));
   }
 
   hasPasscode(): boolean {

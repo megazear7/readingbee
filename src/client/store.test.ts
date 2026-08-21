@@ -44,6 +44,19 @@ describe("AppStore", () => {
     assert.equal(store.currentProfile, null);
   });
 
+  it("keeps instructor unlock in memory until wipe", () => {
+    const store = new AppStore(memoryStorage());
+    store.createFirstProfile("Ava", "words");
+    store.setPasscode("1234");
+    assert.equal(store.instructorUnlocked, false);
+    store.unlockInstructor();
+    assert.equal(store.instructorUnlocked, true);
+    store.addProfile("Max", "sentences");
+    assert.equal(store.instructorUnlocked, true);
+    store.wipeAll();
+    assert.equal(store.instructorUnlocked, false);
+  });
+
   it("replaces all data on import", () => {
     const source = new AppStore(memoryStorage());
     source.createFirstProfile("Ava", "words");

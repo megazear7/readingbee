@@ -162,20 +162,40 @@ try {
   await click(page, ["reading-bee-reading", "shadow", 'button[aria-label="Settings"]']);
   await page.waitForFunction(() => window.location.pathname.startsWith("/settings"), { timeout: 8000 });
   await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
-  const settingsPasscode = ["reading-bee-settings", "shadow", "reading-bee-passcode"];
+  const settingsPasscode = [
+    "reading-bee-settings",
+    "shadow",
+    "reading-bee-instructor-gate",
+    "shadow",
+    "reading-bee-passcode",
+  ];
   await enterPin(page, settingsPasscode, "1234");
   await page.waitForFunction(() => {
-    const pad = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("reading-bee-passcode");
+    const pad = document
+      .querySelector("reading-bee-settings")
+      ?.shadowRoot?.querySelector("reading-bee-instructor-gate")
+      ?.shadowRoot?.querySelector("reading-bee-passcode");
     const title = pad?.shadowRoot?.querySelector("h2")?.textContent;
     return title?.includes("Confirm");
   });
   await enterPin(page, settingsPasscode, "1234");
-  await page.waitForFunction(() =>
-    Boolean(document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".profile-card")),
-  );
+  await page.waitForFunction(() => {
+    const gate = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("reading-bee-instructor-gate");
+    const pad = gate?.shadowRoot?.querySelector("reading-bee-passcode");
+    const card = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".profile-card");
+    return !pad && Boolean(card);
+  });
 
   await click(page, ["reading-bee-settings", "shadow", "button.skeleton"]);
   await page.waitForSelector("reading-bee-add-profile", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const gate = document
+      .querySelector("reading-bee-add-profile")
+      ?.shadowRoot?.querySelector("reading-bee-instructor-gate");
+    const pad = gate?.shadowRoot?.querySelector("reading-bee-passcode");
+    const input = document.querySelector("reading-bee-add-profile")?.shadowRoot?.querySelector("input");
+    return Boolean(input) && !pad;
+  });
   await typeInto(page, ["reading-bee-add-profile", "shadow", "input"], "Max");
   await withPage(
     page,
@@ -196,8 +216,10 @@ try {
   await page.waitForFunction(() => window.location.pathname === "/settings", { timeout: 8000 });
   await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
   await page.waitForFunction(() => {
+    const gate = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("reading-bee-instructor-gate");
+    const pad = gate?.shadowRoot?.querySelector("reading-bee-passcode");
     const cards = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelectorAll(".profile-card");
-    return (cards?.length ?? 0) >= 2;
+    return !pad && (cards?.length ?? 0) >= 2;
   });
 
   await click(page, ["reading-bee-settings", "shadow", "button.back"]);
