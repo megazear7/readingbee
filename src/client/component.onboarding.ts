@@ -102,7 +102,7 @@ export class ReadingBeeOnboarding extends LitElement {
   @state() private band: ReadingBand | null = null;
 
   override render(): TemplateResult {
-    const canStart = this.name.trim().length > 0 && this.band !== null;
+    const canStart = this.name.trim().length > 0;
     return html`
       <div class="screen">
         <div class="card">
@@ -118,7 +118,10 @@ export class ReadingBeeOnboarding extends LitElement {
           <div class="bands">
             ${READING_BANDS.map(
               (band) => html`
-                <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
+                <button
+                  class="band"
+                  ?active=${this.band === band.id}
+                  @click=${() => (this.band = this.band === band.id ? null : band.id)}>
                   <strong>${band.label}</strong>
                   <span>${band.detail}</span>
                 </button>
@@ -136,7 +139,7 @@ export class ReadingBeeOnboarding extends LitElement {
   };
 
   private start = (): void => {
-    if (!this.band || !this.name.trim()) return;
-    appStore.createFirstProfile(this.name, this.band);
+    if (!this.name.trim()) return;
+    appStore.createFirstProfile(this.name, this.band ?? "words");
   };
 }

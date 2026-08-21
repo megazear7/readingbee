@@ -105,13 +105,10 @@ try {
   await page.waitForSelector("reading-bee-onboarding", { timeout: 10000 });
 
   await typeInto(page, ["reading-bee-onboarding", "shadow", "input"], "Ava");
-  await withPage(
-    page,
-    ["reading-bee-onboarding", "shadow"],
-    `const bands = [...node.querySelectorAll("button.band")];
-     const words = bands.find((band) => band.textContent.includes("I read words"));
-     words.click();`,
-  );
+  await page.waitForFunction(() => {
+    const button = document.querySelector("reading-bee-onboarding")?.shadowRoot?.querySelector("button.primary-btn");
+    return Boolean(button && !button.disabled);
+  });
   await click(page, ["reading-bee-onboarding", "shadow", "button.primary-btn"]);
   await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
 
