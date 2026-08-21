@@ -1,7 +1,8 @@
 import { css, html, LitElement, TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
 import { Profile, ReadingBand } from "../shared/type.app.js";
+import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
@@ -11,6 +12,7 @@ import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { dispatch } from "./util.events.js";
+import "./component.modal.js";
 import "./component.passcode.js";
 
 const BANDS: { id: ReadingBand; label: string }[] = [
@@ -114,6 +116,12 @@ export class ReadingBeeSettings extends LitElement {
         font-weight: 700;
         font-size: 0.9rem;
         line-height: 1;
+        border: 2px solid rgba(244, 234, 213, 0.35);
+        cursor: pointer;
+      }
+
+      .swatch:hover {
+        border-color: var(--color-1);
       }
 
       .grow {
@@ -128,19 +136,25 @@ export class ReadingBeeSettings extends LitElement {
 
       .pairs {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
-        gap: 0.4rem;
+        grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+        gap: 0.7rem;
+        padding: 0.2rem 0 0.6rem;
       }
 
       .pair {
-        width: 28px;
-        height: 28px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        border: 2px solid transparent;
+        border: 3px solid transparent;
+        justify-self: center;
       }
 
       .pair[selected] {
         border-color: #fff;
+      }
+
+      .picker-title {
+        margin: 0 0 0.8rem;
       }
 
       .danger {
@@ -179,6 +193,8 @@ export class ReadingBeeSettings extends LitElement {
   @state() private nextPasscode = "";
   @state() private wipeStep: "none" | "confirm" | "pin" = "none";
   @state() private pendingDeleteId: string | null = null;
+  @state() private colorPickerProfileId: string | null = null;
+  @query("reading-bee-modal") private colorModal!: ReadingBeeModal;
 
   constructor() {
     super();
@@ -201,6 +217,9 @@ export class ReadingBeeSettings extends LitElement {
                 `
           }
         </div>
+        <reading-bee-modal @ModelClosing=${this.closeColorPicker}>
+          <div slot="body">${this.colorPickerBody()}</div>
+        </reading-bee-modal>
       </div>
     `;
   }
@@ -285,9 +304,13 @@ export class ReadingBeeSettings extends LitElement {
     return html`
       <div class="profile-card">
         <div class="profile-top">
-          <div class="swatch" style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
+          <button
+            class="swatch"
+            aria-label="Change color"
+            style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}
+            @click=${() => this.openColorPicker(profile.id)}>
             ${profileInitial(profile.name)}
-          </div>
+          </button>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level">Lv ${profile.level}</div>
           ${
@@ -308,20 +331,44 @@ export class ReadingBeeSettings extends LitElement {
                 `
           }
         </div>
-        <div class="pairs">
-          ${COLOR_PAIRS.map(
-            (pair, index) => html`
-              <button
-                class="pair"
-                ?selected=${profile.colorPairIndex === index}
-                style="background: linear-gradient(135deg, ${pair.primary} 0 50%, ${pair.secondary} 50% 100%);"
-                aria-label="Color pair ${index + 1}"
-                @click=${() => appStore.recolorProfile(profile.id, index)}></button>
-            `,
-          )}
-        </div>
       </div>
     `;
+  }
+
+  private colorPickerBody(): TemplateResult {
+    const profile = appStore.state.profiles.find((item) => item.id === this.colorPickerProfileId);
+    if (!profile) {
+      return html``;
+    }
+    return html`
+      <h2 class="picker-title">Choose a color</h2>
+      <div class="pairs">
+        ${COLOR_PAIRS.map(
+          (pair, index) => html`
+            <button
+              class="pair"
+              ?selected=${profile.colorPairIndex === index}
+              style="background: linear-gradient(135deg, ${pair.primary} 0 50%, ${pair.secondary} 50% 100%);"
+              aria-label="Color pair ${index + 1}"
+              @click=${() => this.pickColor(profile.id, index)}></button>
+          `,
+        )}
+      </div>
+    `;
+  }
+
+  private openColorPicker(profileId: string): void {
+    this.colorPickerProfileId = profileId;
+    void this.colorModal.open();
+  }
+
+  private closeColorPicker = (): void => {
+    this.colorPickerProfileId = null;
+  };
+
+  private pickColor(profileId: string, index: number): void {
+    appStore.recolorProfile(profileId, index);
+    void this.colorModal.close();
   }
 
   private passcodeTitle(): string {
