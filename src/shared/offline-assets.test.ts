@@ -4,6 +4,7 @@ import { join, relative } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { LETTER_PICTURES } from "./letter-pictures.js";
+import { SHOP_ITEMS } from "./shop-items.js";
 
 const staticDir = fileURLToPath(new URL("../../src/static", import.meta.url));
 const swSource = readFileSync(join(staticDir, "sw.js"), "utf8");
@@ -30,6 +31,21 @@ describe("offline precache", () => {
   it("precaches every letter picture", () => {
     for (const src of Object.values(LETTER_PICTURES)) {
       assert.equal(assets.includes(src), true, src);
+    }
+  });
+
+  it("precaches every shop image", () => {
+    for (const item of SHOP_ITEMS) {
+      assert.equal(assets.includes(item.image), true, item.image);
+    }
+  });
+
+  it("precaches every image the app ships", () => {
+    const images = listedFiles(staticDir).filter((file) => /\.(webp|png|jpe?g|gif|svg)$/i.test(file));
+    assert.ok(images.length > 0, "expected image files in static");
+    for (const file of images) {
+      const name = relative(staticDir, file).replaceAll("\\", "/");
+      assert.equal(assets.includes(`/${name}`), true, name);
     }
   });
 

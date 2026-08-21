@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-const CACHE_NAME = "reading-bee-v8";
+const CACHE_NAME = "reading-bee-v9";
 const ASSETS = [
   "/",
   "/index.html",
@@ -7,6 +7,9 @@ const ASSETS = [
   "/app.css",
   "/manifest.json",
   "/sw.js",
+  "/fonts/lexend-500.woff2",
+  "/fonts/nunito-400.woff2",
+  "/fonts/nunito-700.woff2",
   "/letters/apple.webp",
   "/letters/boy.webp",
   "/letters/cat.webp",
@@ -37,6 +40,16 @@ const ASSETS = [
   "/letters/whistle.webp",
   "/letters/yoyo.webp",
   "/letters/zebra.webp",
+  "/logo/favicon.png",
+  "/logo/logo-128x128.png",
+  "/logo/logo-16x16.png",
+  "/logo/logo-192x192.png",
+  "/logo/logo-24x24.png",
+  "/logo/logo-256x256.png",
+  "/logo/logo-32x32.png",
+  "/logo/logo-512x512.png",
+  "/logo/logo-64x64.png",
+  "/logo/logo-original.png",
   "/shop/backpack.webp",
   "/shop/balloon.webp",
   "/shop/baseball-bat.webp",
@@ -96,19 +109,6 @@ const ASSETS = [
   "/shop/treehouse.webp",
   "/shop/unicorn.webp",
   "/shop/yoyo.webp",
-  "/fonts/lexend-500.woff2",
-  "/fonts/nunito-400.woff2",
-  "/fonts/nunito-700.woff2",
-  "/logo/favicon.png",
-  "/logo/logo-16x16.png",
-  "/logo/logo-24x24.png",
-  "/logo/logo-32x32.png",
-  "/logo/logo-64x64.png",
-  "/logo/logo-128x128.png",
-  "/logo/logo-192x192.png",
-  "/logo/logo-256x256.png",
-  "/logo/logo-512x512.png",
-  "/logo/logo-original.png",
 ];
 
 const precache = async () => {
