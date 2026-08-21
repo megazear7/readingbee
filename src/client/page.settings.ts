@@ -176,8 +176,30 @@ export class ReadingBeeSettings extends LitElement {
 
       .data-actions {
         display: flex;
-        gap: 0.7rem;
-        flex-wrap: wrap;
+        width: 100%;
+      }
+
+      .data-actions .ghost-btn {
+        flex: 1;
+        border-radius: 0;
+        min-width: 0;
+      }
+
+      .data-actions .ghost-btn + .ghost-btn {
+        border-left-width: 0;
+      }
+
+      .data-actions .ghost-btn:first-child {
+        border-radius: 18px 0 0 18px;
+      }
+
+      .data-actions .ghost-btn:last-child {
+        border-radius: 0 18px 18px 0;
+      }
+
+      .data-actions .ghost-btn:hover {
+        transform: none;
+        z-index: 1;
       }
 
       .skeleton {
