@@ -136,4 +136,37 @@ export const globalStyles = css`
     color: var(--color-1);
     border-color: var(--color-1);
   }
+
+  .button-bar {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .button-bar .ghost-btn {
+    flex: 1;
+    border-radius: 0;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+
+  .button-bar .ghost-btn + .ghost-btn {
+    margin-left: -1px;
+  }
+
+  .button-bar .ghost-btn:first-child {
+    border-radius: 18px 0 0 18px;
+  }
+
+  .button-bar .ghost-btn:last-child {
+    border-radius: 0 18px 18px 0;
+  }
+
+  .button-bar .ghost-btn:hover {
+    transform: none;
+    z-index: 1;
+  }
 `;

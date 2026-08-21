@@ -3,7 +3,7 @@ import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
 import { sampleTextAtLevel } from "../shared/corpus.js";
 import { pictureFor } from "../shared/letter-pictures.js";
-import { shareProfileLink, shouldNativeShare } from "../shared/profile-share.js";
+import { shareAppLink, shareProfileLink, shouldNativeShare } from "../shared/profile-share.js";
 import { MAX_LEVEL, MIN_LEVEL, Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
@@ -80,14 +80,8 @@ export class ReadingBeeSettings extends LitElement {
         margin-top: 1.6rem;
       }
 
-      .instructions {
-        width: 100%;
+      .top-actions {
         margin-bottom: 0.4rem;
-      }
-
-      .instructions:hover:not(:disabled) {
-        transform: translateY(-1px);
-        filter: brightness(1.05);
       }
 
       .stack {
@@ -187,6 +181,9 @@ export class ReadingBeeSettings extends LitElement {
         background: rgba(232, 184, 74, 0.1);
         flex: 0 0 auto;
         white-space: nowrap;
+        transition:
+          background var(--time-normal) ease,
+          border-color var(--time-normal) ease;
       }
 
       .level:hover {
@@ -368,39 +365,6 @@ export class ReadingBeeSettings extends LitElement {
         background: rgba(232, 93, 76, 0.14);
       }
 
-      .data-actions {
-        display: flex;
-        width: 100%;
-        min-width: 0;
-      }
-
-      .data-actions .ghost-btn {
-        flex: 1;
-        border-radius: 0;
-        min-width: 0;
-        position: relative;
-        overflow: hidden;
-        padding-left: 0.55rem;
-        padding-right: 0.55rem;
-      }
-
-      .data-actions .ghost-btn + .ghost-btn {
-        margin-left: -1px;
-      }
-
-      .data-actions .ghost-btn:first-child {
-        border-radius: 18px 0 0 18px;
-      }
-
-      .data-actions .ghost-btn:last-child {
-        border-radius: 0 18px 18px 0;
-      }
-
-      .data-actions .ghost-btn:hover {
-        transform: none;
-        z-index: 1;
-      }
-
       @media (max-width: 719px) {
         .data-actions svg {
           display: none;
@@ -530,7 +494,10 @@ export class ReadingBeeSettings extends LitElement {
       `;
     }
     return html`
-      <button class="primary-btn instructions" @click=${() => navigate("instructions")}>Teacher Instructions</button>
+      <div class="button-bar top-actions">
+        <button class="ghost-btn instructions" @click=${() => navigate("instructions")}>Teacher Instructions</button>
+        <button class="ghost-btn" @click=${this.shareApp}>${shareIcon} Share</button>
+      </div>
       <h2>Profiles</h2>
       <div class="stack">
         ${appStore.state.profiles.map((profile) => this.profileCard(profile))}
@@ -540,7 +507,7 @@ export class ReadingBeeSettings extends LitElement {
         </button>
       </div>
       <h2>App data</h2>
-      <div class="data-actions">
+      <div class="button-bar data-actions">
         <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>${lockIcon} Update passcode</button>
         <button class="ghost-btn" @click=${this.download}>${downloadIcon} Download</button>
         <button class="ghost-btn" @click=${() => navigate("upload")}>${uploadIcon} Upload</button>
@@ -823,6 +790,18 @@ export class ReadingBeeSettings extends LitElement {
 
   private closeShare = (): void => {
     this.shareProfileId = null;
+  };
+
+  private shareApp = async (): Promise<void> => {
+    try {
+      const result = await shareAppLink();
+      if (result === "cancelled") return;
+      if (result === "copied") {
+        dispatch(this, SuccessEvent("Link copied"));
+      }
+    } catch {
+      dispatch(this, WarningEvent("Could not share Reading Bee"));
+    }
   };
 
   private confirmShare = async (profile: Profile): Promise<void> => {

@@ -91,3 +91,15 @@ export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 
   const spent = inventory.reduce((sum, id) => sum + (shopItemById(id)?.cost ?? 0), 0);
   return Math.max(coinsEarned, coins + spent);
 };
+
+export const shopTeaseCount = (coinsEarned: number): number => {
+  const reveal = visibleShopCount(coinsEarned);
+  return Math.min(SHOP_ITEMS.length, reveal + SHOP_COLUMNS * 3);
+};
+
+export const hiddenShopRow = (index: number, reveal: number): 0 | 1 | 2 | null => {
+  if (index < reveal) return null;
+  const row = Math.floor((index - reveal) / SHOP_COLUMNS);
+  if (row < 0 || row > 2) return null;
+  return row as 0 | 1 | 2;
+};

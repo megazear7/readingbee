@@ -60,10 +60,7 @@ const copyText = async (value: string): Promise<void> => {
   }
 };
 
-export const shareProfileLink = async (profile: Profile): Promise<"shared" | "copied" | "cancelled"> => {
-  const url = profileShareUrl(profile);
-  const title = "Reading Bee";
-  const text = `Add ${profile.name}'s Reading Bee profile`;
+const shareOrCopy = async (url: string, title: string, text: string): Promise<"shared" | "copied" | "cancelled"> => {
   if (shouldNativeShare()) {
     try {
       const data: ShareData = { title, text, url };
@@ -84,3 +81,9 @@ export const shareProfileLink = async (profile: Profile): Promise<"shared" | "co
   await copyText(url);
   return "copied";
 };
+
+export const shareProfileLink = async (profile: Profile): Promise<"shared" | "copied" | "cancelled"> =>
+  shareOrCopy(profileShareUrl(profile), "Reading Bee", `Add ${profile.name}'s Reading Bee profile`);
+
+export const shareAppLink = async (): Promise<"shared" | "copied" | "cancelled"> =>
+  shareOrCopy(`${window.location.origin}/`, "Reading Bee", "Reading Bee helps beginner readers learn to read.");

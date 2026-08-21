@@ -1,6 +1,13 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { SHOP_ITEMS, ShopItem, visibleShopCount } from "../shared/shop-items.js";
+import {
+  hiddenShopRow,
+  SHOP_COLUMNS,
+  SHOP_ITEMS,
+  ShopItem,
+  shopTeaseCount,
+  visibleShopCount,
+} from "../shared/shop-items.js";
 import { StoreController } from "./controller.store.js";
 import { backIcon } from "./icons.js";
 import { navigate } from "./nav.js";
@@ -92,10 +99,20 @@ export class ReadingBeeShop extends LitElement {
         margin-bottom: 1.1rem;
       }
 
-      .grid {
+      .grid,
+      .row {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.75rem;
+      }
+
+      .catalog {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .row {
+        position: relative;
       }
 
       .card {
@@ -108,6 +125,13 @@ export class ReadingBeeShop extends LitElement {
         border: 1px solid var(--color-panel-border);
         min-width: 0;
         text-align: center;
+        transition: var(--transition-all);
+      }
+
+      .card.buyable:hover {
+        transform: translateY(-1px) scale(1.03);
+        border-color: var(--color-1);
+        background: #221e18;
       }
 
       .card img {
@@ -128,11 +152,6 @@ export class ReadingBeeShop extends LitElement {
         overflow: hidden;
       }
 
-      .card.mystery img {
-        filter: blur(18px) grayscale(1) brightness(0.18);
-        opacity: 0.18;
-      }
-
       .card.mystery .name,
       .card.mystery .meta {
         visibility: hidden;
@@ -143,7 +162,49 @@ export class ReadingBeeShop extends LitElement {
         position: absolute;
         inset: 0;
         border-radius: inherit;
-        background: rgba(12, 11, 9, 0.82);
+      }
+
+      .row.mystery-1 .card img {
+        filter: blur(6px) grayscale(0.4) brightness(0.7);
+        opacity: 0.55;
+      }
+
+      .row.mystery-1 .card::after {
+        background: rgba(12, 11, 9, 0.28);
+      }
+
+      .row.mystery-2 .card img {
+        filter: blur(12px) grayscale(0.8) brightness(0.35);
+        opacity: 0.28;
+      }
+
+      .row.mystery-2 .card::after {
+        background: rgba(12, 11, 9, 0.62);
+      }
+
+      .row.mystery-3 .card img {
+        opacity: 0;
+      }
+
+      .row.mystery-3 .card::after {
+        background: #14110e;
+      }
+
+      .tease {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 0.6rem 1rem;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        color: var(--color-primary-text);
+        text-shadow: 0 2px 14px rgba(12, 11, 9, 0.95);
+        pointer-events: none;
       }
 
       .card.popping img {
@@ -204,6 +265,11 @@ export class ReadingBeeShop extends LitElement {
     }
     const owned = SHOP_ITEMS.filter((item) => profile.inventory.includes(item.id));
     const reveal = visibleShopCount(profile.coinsEarned);
+    const teaseUntil = shopTeaseCount(profile.coinsEarned);
+    const rows: { items: ShopItem[]; start: number }[] = [];
+    for (let index = 0; index < teaseUntil; index += SHOP_COLUMNS) {
+      rows.push({ items: SHOP_ITEMS.slice(index, index + SHOP_COLUMNS), start: index });
+    }
     return html`
       <div class="page">
         <header>
@@ -227,8 +293,22 @@ export class ReadingBeeShop extends LitElement {
           }
           <h2>Rewards</h2>
           <p class="lede">Tap a colorful item to buy it. Gray items cost more coins than you have right now.</p>
-          <div class="grid">
-            ${SHOP_ITEMS.map((item, index) => this.card(item, profile.coins, false, index >= reveal))}
+          <div class="catalog">
+            ${rows.map((row) => {
+              const hidden = hiddenShopRow(row.start, reveal);
+              return html`
+                <div class="row ${hidden === null ? "" : `mystery-${hidden + 1}`}">
+                  ${row.items.map((item) => this.card(item, profile.coins, false, hidden !== null))}
+                  ${
+                    hidden === 1
+                      ? html`
+                          <p class="tease">Earn more coins to see more items</p>
+                        `
+                      : ""
+                  }
+                </div>
+              `;
+            })}
           </div>
         </div>
       </div>

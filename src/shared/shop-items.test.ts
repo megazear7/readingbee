@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { SHOP_ITEMS, visibleShopCount } from "./shop-items.js";
+import { hiddenShopRow, SHOP_ITEMS, shopTeaseCount, visibleShopCount } from "./shop-items.js";
 
 const staticDir = fileURLToPath(new URL("../../src/static", import.meta.url));
 
@@ -26,5 +26,15 @@ describe("SHOP_ITEMS", () => {
     assert.equal(visibleShopCount(22), 12);
     assert.equal(visibleShopCount(40), 21);
     assert.equal(visibleShopCount(200), SHOP_ITEMS.length);
+  });
+
+  it("teases three hidden rows and labels them by depth", () => {
+    assert.equal(shopTeaseCount(0), 18);
+    assert.equal(hiddenShopRow(8, 9), null);
+    assert.equal(hiddenShopRow(9, 9), 0);
+    assert.equal(hiddenShopRow(11, 9), 0);
+    assert.equal(hiddenShopRow(12, 9), 1);
+    assert.equal(hiddenShopRow(17, 9), 2);
+    assert.equal(hiddenShopRow(18, 9), null);
   });
 });
