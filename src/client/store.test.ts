@@ -55,6 +55,9 @@ describe("AppStore", () => {
     assert.equal(store.instructorUnlocked, true);
     store.addProfile("Max", "sentences");
     assert.equal(store.instructorUnlocked, true);
+    store.lockInstructor();
+    assert.equal(store.instructorUnlocked, false);
+    store.unlockInstructor();
     store.wipeAll();
     assert.equal(store.instructorUnlocked, false);
   });

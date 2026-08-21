@@ -3,14 +3,14 @@ import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
 import { sampleTextAtLevel } from "../shared/corpus.js";
 import { pictureFor } from "../shared/letter-pictures.js";
-import { profileShareUrl, shouldNativeShare } from "../shared/profile-share.js";
+import { shareProfileLink, shouldNativeShare } from "../shared/profile-share.js";
 import { MAX_LEVEL, MIN_LEVEL, Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
 import { WarningEvent } from "./event.warning.js";
-import { backIcon, downloadIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
+import { backIcon, downloadIcon, lockIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -85,6 +85,11 @@ export class ReadingBeeSettings extends LitElement {
         margin-bottom: 0.4rem;
       }
 
+      .instructions:hover:not(:disabled) {
+        transform: translateY(-1px);
+        filter: brightness(1.05);
+      }
+
       .stack {
         display: grid;
         gap: 0.8rem;
@@ -135,6 +140,40 @@ export class ReadingBeeSettings extends LitElement {
       .grow {
         flex: 1;
         min-width: 0;
+      }
+
+      .name-btn {
+        flex: 1;
+        min-width: 0;
+        min-height: 42px;
+        padding: 0.45rem 0.85rem;
+        border-radius: 14px;
+        background: #221e18;
+        border: 1px solid var(--color-panel-border);
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .name-btn:hover {
+        border-color: var(--color-1);
+      }
+
+      .name-input {
+        display: none;
+      }
+
+      @media (min-width: 720px) {
+        .name-btn {
+          display: none;
+        }
+
+        .name-input {
+          display: block;
+        }
       }
 
       .level {
@@ -362,6 +401,12 @@ export class ReadingBeeSettings extends LitElement {
         z-index: 1;
       }
 
+      @media (max-width: 719px) {
+        .data-actions svg {
+          display: none;
+        }
+      }
+
       .skeleton {
         width: 100%;
         min-height: 58px;
@@ -485,7 +530,7 @@ export class ReadingBeeSettings extends LitElement {
       `;
     }
     return html`
-      <button class="muted-btn instructions" @click=${() => navigate("instructions")}>Instructions</button>
+      <button class="primary-btn instructions" @click=${() => navigate("instructions")}>Teacher Instructions</button>
       <h2>Profiles</h2>
       <div class="stack">
         ${appStore.state.profiles.map((profile) => this.profileCard(profile))}
@@ -496,7 +541,7 @@ export class ReadingBeeSettings extends LitElement {
       </div>
       <h2>App data</h2>
       <div class="data-actions">
-        <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>Update passcode</button>
+        <button class="ghost-btn" @click=${() => (this.updatingPasscode = true)}>${lockIcon} Update passcode</button>
         <button class="ghost-btn" @click=${this.download}>${downloadIcon} Download</button>
         <button class="ghost-btn" @click=${() => navigate("upload")}>${uploadIcon} Upload</button>
       </div>
@@ -519,7 +564,11 @@ export class ReadingBeeSettings extends LitElement {
             @click=${() => this.openColorPicker(profile.id)}>
             ${profileInitial(profile.name)}
           </button>
-          <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
+          <button class="name-btn" @click=${() => navigate("edit-profile", profile.id)}>${profile.name}</button>
+          <input
+            class="grow name-input"
+            .value=${profile.name}
+            @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level-wrap">
             <button class="level" aria-label="Set exact level" @click=${() => this.openLevel(profile.id)}>
               Lv ${profile.level}
@@ -777,24 +826,16 @@ export class ReadingBeeSettings extends LitElement {
   };
 
   private confirmShare = async (profile: Profile): Promise<void> => {
-    const url = profileShareUrl(profile);
     try {
-      if (shouldNativeShare()) {
-        await navigator.share({
-          title: "Reading Bee",
-          text: `Add ${profile.name}'s Reading Bee profile`,
-          url,
-        });
-        await this.shareModal.close();
+      const result = await shareProfileLink(profile);
+      if (result === "cancelled") {
         return;
       }
-      await navigator.clipboard.writeText(url);
       await this.shareModal.close();
-      dispatch(this, SuccessEvent("Link copied"));
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
+      if (result === "copied") {
+        dispatch(this, SuccessEvent("Link copied"));
       }
+    } catch {
       dispatch(this, WarningEvent("Could not share this profile"));
     }
   };

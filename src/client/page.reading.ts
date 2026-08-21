@@ -353,7 +353,9 @@ export class ReadingBeeReading extends LitElement {
   @state() private coinOriginY = 0;
   @state() private coinTargetX = 0;
   @state() private coinTargetY = 0;
+  @state() private outgoingPicture: string | undefined;
   private locked = false;
+  private pendingLevelUp = 0;
   private rippleSeq = 0;
 
   constructor() {
@@ -363,6 +365,7 @@ export class ReadingBeeReading extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    appStore.lockInstructor();
     window.addEventListener("keydown", this.onKey);
   }
 
@@ -451,15 +454,15 @@ export class ReadingBeeReading extends LitElement {
   }
 
   private promptView(text: ReadingText, extraClass: string): TemplateResult {
-    const profile = extraClass === "leave" ? undefined : (appStore.currentProfile ?? undefined);
-    const picture = pictureFor(text, profile);
+    const picture =
+      extraClass === "leave" ? this.outgoingPicture : pictureFor(text, appStore.currentProfile ?? undefined);
     return html`
       <div class="prompt ${extraClass} ${picture ? "has-picture" : ""}" data-kind=${text.kind}>
         <span class="glyph">${text.text}</span>
         ${
           picture
             ? html`
-                <img class="picture" src=${picture} alt="" aria-hidden="true" />
+                <img class="picture" src=${picture} alt="" aria-hidden="true" decoding="async" fetchpriority="high" />
               `
             : ""
         }
@@ -468,6 +471,7 @@ export class ReadingBeeReading extends LitElement {
   }
 
   private openSettings = (): void => {
+    appStore.lockInstructor();
     navigate("settings");
   };
 
@@ -480,18 +484,23 @@ export class ReadingBeeReading extends LitElement {
     }
     const previousLevel = appStore.currentProfile?.level ?? 0;
     this.locked = true;
+    this.outgoingPicture = pictureFor(current, appStore.currentProfile ?? undefined);
     this.outgoing = current;
     const { awardedCoin } = appStore.record(result);
     if (awardedCoin && !this.flyingCoin) {
       this.startCoinFlight(event);
     }
     const nextLevel = appStore.currentProfile?.level ?? 0;
-    if (nextLevel > previousLevel) {
-      this.startCelebration(nextLevel);
-    }
+    this.pendingLevelUp = nextLevel > previousLevel ? nextLevel : 0;
     window.setTimeout(() => {
       this.outgoing = null;
-      this.locked = false;
+      this.outgoingPicture = undefined;
+      if (this.pendingLevelUp) {
+        this.startCelebration(this.pendingLevelUp);
+        this.pendingLevelUp = 0;
+      } else {
+        this.locked = false;
+      }
     }, 360);
   }
 
@@ -508,6 +517,7 @@ export class ReadingBeeReading extends LitElement {
 
   private onCelebrateDone = (): void => {
     this.celebrating = false;
+    this.locked = false;
   };
 
   private startCoinFlight(event?: Event): void {

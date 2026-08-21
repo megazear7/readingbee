@@ -161,6 +161,12 @@ export class AppStore extends EventTarget {
     this.dispatchEvent(new Event("change"));
   }
 
+  lockInstructor(): void {
+    if (!this.instructorUnlocked) return;
+    this.instructorUnlocked = false;
+    this.dispatchEvent(new Event("change"));
+  }
+
   hasPasscode(): boolean {
     return Boolean(this.state.passcode);
   }

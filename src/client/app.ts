@@ -11,6 +11,7 @@ import "./component.import-profile.js";
 import "./component.onboarding.js";
 import "./component.toast.js";
 import "./page.add-profile.js";
+import "./page.edit-profile.js";
 import "./page.instructions.js";
 import "./page.reading.js";
 import "./page.settings.js";
@@ -57,21 +58,25 @@ export class ReadingBeeApp extends LitElement {
           ? html`
               <reading-bee-add-profile></reading-bee-add-profile>
             `
-          : this.view === "instructions"
+          : this.view === "edit-profile"
             ? html`
-                <reading-bee-instructions></reading-bee-instructions>
+                <reading-bee-edit-profile></reading-bee-edit-profile>
               `
-            : this.view === "shop"
+            : this.view === "instructions"
               ? html`
-                  <reading-bee-shop></reading-bee-shop>
+                  <reading-bee-instructions></reading-bee-instructions>
                 `
-              : this.view === "settings"
+              : this.view === "shop"
                 ? html`
-                    <reading-bee-settings></reading-bee-settings>
+                    <reading-bee-shop></reading-bee-shop>
                   `
-                : html`
-                    <reading-bee-reading></reading-bee-reading>
-                  `;
+                : this.view === "settings"
+                  ? html`
+                      <reading-bee-settings></reading-bee-settings>
+                    `
+                  : html`
+                      <reading-bee-reading></reading-bee-reading>
+                    `;
     return html`
       ${page}
       <reading-bee-import-profile></reading-bee-import-profile>

@@ -9,9 +9,18 @@ type Coin = {
   spin: number;
   vs: number;
   r: number;
-  bounce: number;
-  maxBounce: number;
-  seeking: boolean;
+};
+
+type Sparkle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  r: number;
+  rot: number;
+  vr: number;
 };
 
 @customElement("reading-bee-coin-flight")
@@ -41,7 +50,9 @@ export class ReadingBeeCoinFlight extends LitElement {
   @query("canvas") private canvas!: HTMLCanvasElement;
   private frame = 0;
   private coin: Coin | null = null;
+  private sparkles: Sparkle[] = [];
   private last = 0;
+  private finished = false;
 
   override firstUpdated(): void {
     this.spawn();
@@ -56,7 +67,7 @@ export class ReadingBeeCoinFlight extends LitElement {
 
   protected override updated(changed: PropertyValues<this>): void {
     if (changed.has("originX") || changed.has("originY")) {
-      if (!this.coin) this.spawn();
+      if (!this.coin && !this.finished) this.spawn();
     }
   }
 
@@ -67,26 +78,41 @@ export class ReadingBeeCoinFlight extends LitElement {
   }
 
   private spawn(): void {
-    const bounce = 1 + Math.floor(Math.random() * 3);
     this.coin = {
       x: this.originX,
       y: this.originY,
-      vx: (Math.random() - 0.5) * 420,
-      vy: -620 - Math.random() * 380,
+      vx: (this.targetX - this.originX) * 1.15 + (Math.random() - 0.5) * 90,
+      vy: (this.targetY - this.originY) * 1.35 - 80 - Math.random() * 60,
       spin: Math.random() * Math.PI * 2,
-      vs: (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 10),
-      r: 16 + Math.random() * 6,
-      bounce: 0,
-      maxBounce: bounce,
-      seeking: false,
+      vs: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 8),
+      r: 15 + Math.random() * 4,
     };
+    this.burst(this.originX, this.originY, 18);
+  }
+
+  private burst(x: number, y: number, count: number): void {
+    for (let i = 0; i < count; i += 1) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+      const speed = 90 + Math.random() * 220;
+      this.sparkles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: 0.18 + Math.random() * 0.16,
+        r: 1.6 + Math.random() * 2.2,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 14,
+      });
+    }
   }
 
   private tick = (now: number): void => {
     const dt = Math.min(0.032, (now - this.last) / 1000);
     this.last = now;
     const canvas = this.canvas;
-    if (!canvas || !this.coin) return;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
@@ -100,51 +126,76 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.clearRect(0, 0, width, height);
 
     const coin = this.coin;
-    const ceiling = Math.max(coin.r, this.targetY);
-    if (!coin.seeking) {
-      coin.vy -= 1680 * dt;
-      coin.x += coin.vx * dt;
-      coin.y += coin.vy * dt;
-      coin.spin += coin.vs * dt;
-      if (coin.x < coin.r) {
-        coin.x = coin.r;
-        coin.vx = Math.abs(coin.vx) * 0.78;
-      }
-      if (coin.x > width - coin.r) {
-        coin.x = width - coin.r;
-        coin.vx = -Math.abs(coin.vx) * 0.78;
-      }
-      if (coin.y <= ceiling && coin.vy < 0) {
-        coin.y = ceiling;
-        coin.vy *= -0.58 - Math.random() * 0.16;
-        coin.vx *= 0.82;
-        coin.bounce += 1;
-        if (coin.bounce >= coin.maxBounce) {
-          coin.seeking = true;
-        }
-      }
-    } else {
+    if (coin) {
       const dx = this.targetX - coin.x;
       const dy = this.targetY - coin.y;
       const dist = Math.hypot(dx, dy) || 1;
-      const pull = 980 + dist * 3.4;
+      const pull = 4200 + dist * 6;
       coin.vx += (dx / dist) * pull * dt;
       coin.vy += (dy / dist) * pull * dt;
-      coin.vx *= 0.9;
-      coin.vy *= 0.9;
+      coin.vx *= 0.84;
+      coin.vy *= 0.84;
       coin.x += coin.vx * dt;
       coin.y += coin.vy * dt;
       coin.spin += coin.vs * dt;
-      coin.r = Math.max(8, coin.r - 10 * dt);
-      if (dist < 22) {
-        this.dispatchEvent(new Event("done"));
-        return;
+      coin.r = Math.max(7, coin.r - 18 * dt);
+      if (dist < 18) {
+        this.burst(this.targetX, this.targetY, 20);
+        this.coin = null;
+      } else {
+        this.drawCoin(ctx, coin);
       }
     }
 
-    this.drawCoin(ctx, coin);
+    this.sparkles = this.sparkles.filter((sparkle) => sparkle.life < sparkle.maxLife);
+    for (const sparkle of this.sparkles) {
+      sparkle.life += dt;
+      sparkle.x += sparkle.vx * dt;
+      sparkle.y += sparkle.vy * dt;
+      sparkle.vy += 280 * dt;
+      sparkle.vx *= 0.9;
+      sparkle.rot += sparkle.vr * dt;
+      this.drawSparkle(ctx, sparkle);
+    }
+
+    if (!this.coin && this.sparkles.length === 0) {
+      if (!this.finished) {
+        this.finished = true;
+        this.dispatchEvent(new Event("done"));
+      }
+      return;
+    }
+
     this.frame = requestAnimationFrame(this.tick);
   };
+
+  private drawSparkle(ctx: CanvasRenderingContext2D, sparkle: Sparkle): void {
+    const t = sparkle.life / sparkle.maxLife;
+    const alpha = t < 0.2 ? t / 0.2 : 1 - (t - 0.2) / 0.8;
+    const r = sparkle.r * (1 - t * 0.35);
+    ctx.save();
+    ctx.translate(sparkle.x, sparkle.y);
+    ctx.rotate(sparkle.rot);
+    ctx.globalAlpha = Math.max(0, alpha);
+    ctx.fillStyle = "#fff6c8";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 2.1);
+    ctx.lineTo(r * 0.45, 0);
+    ctx.lineTo(0, r * 2.1);
+    ctx.lineTo(-r * 0.45, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = "#f3d27a";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.5);
+    ctx.lineTo(r * 0.38, 0);
+    ctx.lineTo(0, r * 1.5);
+    ctx.lineTo(-r * 0.38, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
 
   private drawCoin(ctx: CanvasRenderingContext2D, coin: Coin): void {
     ctx.save();

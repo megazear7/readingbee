@@ -201,7 +201,9 @@ try {
   });
   await enterPin(page, settingsPasscode, "1234");
   await page.waitForFunction(() => {
-    const gate = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("reading-bee-instructor-gate");
+    const gate = document
+      .querySelector("reading-bee-settings")
+      ?.shadowRoot?.querySelector("reading-bee-instructor-gate");
     const pad = gate?.shadowRoot?.querySelector("reading-bee-passcode");
     const card = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".profile-card");
     return !pad && Boolean(card);
@@ -212,6 +214,9 @@ try {
   const instructions = await textOf(page, ["reading-bee-instructions", "shadow", ".body"]);
   if (!instructions.includes("left arrow") || !instructions.includes("green check")) {
     throw new Error("Instructions missing shortcut help");
+  }
+  if (!instructions.includes("reading screen always")) {
+    throw new Error("Instructions missing settings passcode help");
   }
   await click(page, ["reading-bee-instructions", "shadow", "button.back"]);
   await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
@@ -239,7 +244,9 @@ try {
   await page.waitForFunction(() => window.location.pathname === "/settings", { timeout: 8000 });
   await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
   await page.waitForFunction(() => {
-    const gate = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("reading-bee-instructor-gate");
+    const gate = document
+      .querySelector("reading-bee-settings")
+      ?.shadowRoot?.querySelector("reading-bee-instructor-gate");
     const pad = gate?.shadowRoot?.querySelector("reading-bee-passcode");
     const cards = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelectorAll(".profile-card");
     return !pad && (cards?.length ?? 0) >= 2;
@@ -289,7 +296,10 @@ try {
   await page.waitForFunction(() => {
     const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".delete-modal");
     const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
-    const closing = backdrop?.classList.contains("visible") || backdrop?.classList.contains("opening") || backdrop?.classList.contains("closing");
+    const closing =
+      backdrop?.classList.contains("visible") ||
+      backdrop?.classList.contains("opening") ||
+      backdrop?.classList.contains("closing");
     return !closing && document.body.style.overflow !== "hidden";
   });
 
@@ -308,6 +318,19 @@ try {
   if (currentInitial !== "M") {
     throw new Error(`New profile was not selected, avatar showed ${currentInitial}`);
   }
+
+  await click(page, ["reading-bee-reading", "shadow", 'button[aria-label="Settings"]']);
+  await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const pad = document
+      .querySelector("reading-bee-settings")
+      ?.shadowRoot?.querySelector("reading-bee-instructor-gate")
+      ?.shadowRoot?.querySelector("reading-bee-passcode");
+    const title = pad?.shadowRoot?.querySelector("h2")?.textContent;
+    return title?.includes("Enter passcode");
+  });
+  await click(page, ["reading-bee-settings", "shadow", "button.back"]);
+  await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
 
   await click(page, ["reading-bee-reading", "shadow", "button.coins"]);
   await page.waitForSelector("reading-bee-shop", { timeout: 10000 });

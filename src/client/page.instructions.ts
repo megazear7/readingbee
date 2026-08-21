@@ -91,7 +91,7 @@ export class ReadingBeeInstructions extends LitElement {
       <div class="page">
         <header>
           <button class="back" aria-label="Back" @click=${() => navigate("settings")}>${backIcon}</button>
-          <h1>Instructions</h1>
+          <h1>Teacher Instructions</h1>
         </header>
         <div class="body">
           <reading-bee-instructor-gate>
@@ -137,15 +137,16 @@ export class ReadingBeeInstructions extends LitElement {
             </ul>
             <h2>Levels, coins, and the shop</h2>
             <p>
-              The gold badge is the student's reading level. After a few correct reads, a gold coin can bounce up to the
+              The gold badge is the student's reading level. After a few correct reads, a gold coin can fly up to the
               top of the screen. Tap the coin count to visit the shop and spend coins on rewards. The profile circle
               opens switching and progress.
             </p>
             <h2>Settings</h2>
             <p>
-              Settings is locked with a 4-digit instructor passcode. Use it to add profiles, share a student, change
-              colors, and back up data. After unlocking once, you can move between settings pages without entering it
-              again until the app is closed.
+              Settings is locked with a 4-digit instructor passcode. Opening settings from the reading screen always
+              asks for the passcode. Use it to add profiles, share a student, change colors, and back up data. After
+              unlocking, you can move between settings pages without entering it again until you go back to the reading
+              screen.
             </p>
           </reading-bee-instructor-gate>
         </div>
