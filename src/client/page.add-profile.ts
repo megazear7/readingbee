@@ -167,7 +167,7 @@ export class ReadingBeeAddProfile extends LitElement {
   );
 
   override render(): TemplateResult {
-    const canSave = this.name.trim().length > 0 && this.band !== null;
+    const canSave = this.name.trim().length > 0;
     return html`
       <div class="page">
         <header>
@@ -185,7 +185,10 @@ export class ReadingBeeAddProfile extends LitElement {
               <div class="bands">
                 ${READING_BANDS.map(
                   (band) => html`
-                    <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
+                    <button
+                      class="band"
+                      ?active=${this.band === band.id}
+                      @click=${() => (this.band = this.band === band.id ? null : band.id)}>
                       <strong>${band.label}</strong>
                       <span>${band.detail}</span>
                     </button>
@@ -224,11 +227,11 @@ export class ReadingBeeAddProfile extends LitElement {
   };
 
   private save = (): void => {
-    if (!this.band || !this.name.trim()) {
-      dispatch(this, WarningEvent("Enter a name and reading level"));
+    if (!this.name.trim()) {
+      dispatch(this, WarningEvent("Enter a name"));
       return;
     }
-    appStore.addProfile(this.name, this.band, this.colorPairIndex);
+    appStore.addProfile(this.name, this.band ?? "words", this.colorPairIndex);
     dispatch(this, SuccessEvent("Profile added"));
     navigate("settings");
   };

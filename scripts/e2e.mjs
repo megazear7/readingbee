@@ -205,13 +205,6 @@ try {
     return Boolean(input) && !pad;
   });
   await typeInto(page, ["reading-bee-add-profile", "shadow", "input"], "Max");
-  await withPage(
-    page,
-    ["reading-bee-add-profile", "shadow"],
-    `const bands = [...node.querySelectorAll("button.band")];
-     const sentences = bands.find((band) => band.textContent.includes("I read sentences"));
-     sentences.click();`,
-  );
   await page.waitForFunction(() => {
     const button = document.querySelector("reading-bee-add-profile")?.shadowRoot?.querySelector("button.primary-btn");
     return Boolean(button && !button.disabled);
