@@ -66,6 +66,8 @@ export class ReadingBeeOnboarding extends LitElement {
       }
 
       .band {
+        width: 100%;
+        box-sizing: border-box;
         text-align: left;
         padding: 1rem 1.1rem;
         border-radius: 18px;
