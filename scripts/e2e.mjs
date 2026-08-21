@@ -109,12 +109,20 @@ try {
     const button = document.querySelector("reading-bee-onboarding")?.shadowRoot?.querySelector("button.primary-btn");
     return Boolean(button && !button.disabled);
   });
-  await click(page, ["reading-bee-onboarding", "shadow", "button.primary-btn"]);
+  await withPage(
+    page,
+    ["reading-bee-onboarding", "shadow", "button.primary-btn"],
+    "node.scrollIntoView(); node.click();",
+  );
   await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
 
   const firstPrompt = await textOf(page, ["reading-bee-reading", "shadow", ".prompt"]);
   if (!firstPrompt) {
     throw new Error("No reading prompt after onboarding");
+  }
+  const coinLabel = await textOf(page, ["reading-bee-reading", "shadow", "button.coins"]);
+  if (!coinLabel.includes("0")) {
+    throw new Error(`Coin counter showed ${coinLabel}`);
   }
   await click(page, ["reading-bee-reading", "shadow", "button.score-btn.yes"]);
   await page.waitForFunction(
@@ -190,6 +198,15 @@ try {
     const card = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".profile-card");
     return !pad && Boolean(card);
   });
+
+  await click(page, ["reading-bee-settings", "shadow", "button.instructions"]);
+  await page.waitForSelector("reading-bee-instructions", { timeout: 10000 });
+  const instructions = await textOf(page, ["reading-bee-instructions", "shadow", ".body"]);
+  if (!instructions.includes("left arrow") || !instructions.includes("green check")) {
+    throw new Error("Instructions missing shortcut help");
+  }
+  await click(page, ["reading-bee-instructions", "shadow", "button.back"]);
+  await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
 
   await click(page, ["reading-bee-settings", "shadow", "button.skeleton"]);
   await page.waitForSelector("reading-bee-add-profile", { timeout: 10000 });
@@ -271,6 +288,15 @@ try {
   await click(page, ["reading-bee-settings", "shadow", "button.back"]);
   await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
 
+  await click(page, ["reading-bee-reading", "shadow", "button.coins"]);
+  await page.waitForSelector("reading-bee-shop", { timeout: 10000 });
+  const shopTitle = await textOf(page, ["reading-bee-shop", "shadow", "h1"]);
+  if (shopTitle !== "Shop") {
+    throw new Error(`Shop title was ${shopTitle}`);
+  }
+  await click(page, ["reading-bee-shop", "shadow", "button.back"]);
+  await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
+
   await click(page, ["reading-bee-reading", "shadow", "button.avatar"]);
   await withPage(
     page,
@@ -318,8 +344,12 @@ try {
     textStats: {},
     events: [],
   };
+  await page.evaluate(async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  });
   await page.goto(`${BASE}/?profile=${encodeURIComponent(JSON.stringify(sharedProfile))}`, {
-    waitUntil: "networkidle0",
+    waitUntil: "domcontentloaded",
     timeout: 20000,
   });
   await page.waitForSelector("reading-bee-import-profile", { timeout: 10000 });

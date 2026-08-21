@@ -1,12 +1,14 @@
 import {
   applyColorPair,
   createProfile,
+  defaultRng,
   ensureCurrentText,
   normalizeImportedProfile,
   recordAndPickNext,
   setExactLevel,
 } from "../shared/algorithm.js";
 import { corpus, corpusById } from "../shared/corpus.js";
+import { shopItemById } from "../shared/shop-items.js";
 import { clearState, loadState, saveState, StorageLike } from "../shared/storage.js";
 import { AppState, PASSCODE_LENGTH, Profile, ReadingBand, ReadingText, ResultKind } from "../shared/type.app.js";
 import { createId } from "../shared/util.id.js";
@@ -117,11 +119,40 @@ export class AppStore extends EventTarget {
     return true;
   }
 
-  record(result: ResultKind): void {
+  record(result: ResultKind): { awardedCoin: boolean } {
     const profile = this.currentProfile;
     const text = this.currentText;
-    if (!profile || !text) return;
-    this.replaceProfile(recordAndPickNext(profile, text, result, corpus));
+    if (!profile || !text) return { awardedCoin: false };
+    let next = recordAndPickNext(profile, text, result, corpus);
+    let awardedCoin = false;
+    if (result === "right") {
+      let until = next.correctsUntilCoin;
+      if (until <= 0) {
+        until = defaultRng.int(3, 6);
+      }
+      until -= 1;
+      if (until <= 0) {
+        awardedCoin = true;
+        next = { ...next, coins: next.coins + 1, correctsUntilCoin: defaultRng.int(3, 6) };
+      } else {
+        next = { ...next, correctsUntilCoin: until };
+      }
+    }
+    this.replaceProfile(next);
+    return { awardedCoin };
+  }
+
+  buyItem(itemId: string): boolean {
+    const profile = this.currentProfile;
+    const item = shopItemById(itemId);
+    if (!profile || !item) return false;
+    if (profile.inventory.includes(itemId) || profile.coins < item.cost) return false;
+    this.replaceProfile({
+      ...profile,
+      coins: profile.coins - item.cost,
+      inventory: [...profile.inventory, itemId],
+    });
+    return true;
   }
 
   unlockInstructor(): void {

@@ -58,6 +58,62 @@ describe("AppStore", () => {
     assert.equal(store.instructorUnlocked, false);
   });
 
+  it("fills coin fields on v2 data without remapping levels", () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 2,
+        passcode: null,
+        currentProfileId: "p1",
+        profiles: [
+          {
+            id: "p1",
+            name: "Ava",
+            colorPairIndex: 0,
+            primaryColor: "#5BA4E8",
+            secondaryColor: "#CDE6F7",
+            band: "sentences",
+            level: 47,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            currentTextId: null,
+            lastTextId: null,
+            recentTextIds: [],
+            boostActive: false,
+            boostLevel: 47,
+            correctStreak: 0,
+            wrongStreak: 0,
+            textStats: {},
+            events: [],
+          },
+        ],
+      }),
+    );
+    const store = new AppStore(storage);
+    assert.equal(store.currentProfile?.level, 47);
+    assert.equal(store.currentProfile?.coins, 0);
+    assert.deepEqual(store.currentProfile?.inventory, []);
+    assert.equal(store.state.version, APP_VERSION);
+  });
+
+  it("awards a coin after enough correct reads and spends it in the shop", () => {
+    const store = new AppStore(memoryStorage());
+    store.createFirstProfile("Ava", "words");
+    assert.equal(store.currentProfile?.coins, 0);
+    let awarded = false;
+    for (let i = 0; i < 12 && !awarded; i += 1) {
+      awarded = store.record("right").awardedCoin;
+    }
+    assert.equal(awarded, true);
+    assert.equal((store.currentProfile?.coins ?? 0) >= 1, true);
+    const coins = store.currentProfile!.coins;
+    assert.equal(store.buyItem("sticker"), coins >= 1);
+    if (coins >= 1) {
+      assert.equal(store.currentProfile?.inventory.includes("sticker"), true);
+      assert.equal(store.buyItem("sticker"), false);
+    }
+  });
+
   it("imports a shared profile as current without keeping its id", () => {
     const source = new AppStore(memoryStorage());
     source.createFirstProfile("Ava", "words");

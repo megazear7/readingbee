@@ -34,10 +34,10 @@ describe("offline precache", () => {
   });
 
   it("precaches every static file the app ships", () => {
-    const skip = new Set(["_redirects"]);
+    const skip = new Set(["_redirects", ".DS_Store"]);
     for (const file of listedFiles(staticDir)) {
       const name = relative(staticDir, file).replaceAll("\\", "/");
-      if (skip.has(name)) {
+      if (skip.has(name) || name.endsWith(".DS_Store")) {
         continue;
       }
       assert.equal(assets.includes(`/${name}`), true, name);

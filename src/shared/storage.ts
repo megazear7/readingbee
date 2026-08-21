@@ -30,7 +30,7 @@ export const memoryStorage = (): StorageLike => {
 
 export const migrateState = (raw: unknown): AppState => {
   const loose = PersistedState.parse(raw);
-  const profiles = loose.version < APP_VERSION ? loose.profiles.map(migrateProfileFromV1) : loose.profiles;
+  const profiles = loose.version < 2 ? loose.profiles.map(migrateProfileFromV1) : loose.profiles;
   return AppState.parse({
     ...loose,
     version: APP_VERSION,

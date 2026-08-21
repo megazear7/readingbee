@@ -8,6 +8,7 @@ import { checkIcon, gearIcon, xIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import "./component.coin-flight.js";
 import "./component.level-badge.js";
 import "./component.level-up.js";
 import "./component.profile-modal.js";
@@ -71,6 +72,35 @@ export class ReadingBeeReading extends LitElement {
       .avatar:hover {
         transform: scale(1.08);
         box-shadow: 0 0 0 3px var(--color-1);
+      }
+
+      .coins {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        min-height: 36px;
+        padding: 0.15rem 0.65rem 0.15rem 0.3rem;
+        border-radius: 999px;
+        background: #1a1713;
+        border: 1px solid rgba(232, 184, 74, 0.35);
+        color: var(--color-1);
+        font-weight: 800;
+        transition:
+          transform var(--time-normal) ease,
+          border-color var(--time-normal) ease;
+      }
+
+      .coins:hover {
+        transform: scale(1.06);
+        border-color: var(--color-1);
+      }
+
+      .coin-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #fff6c8, #e8b84a 58%, #9a6c1e);
+        box-shadow: inset 0 0 0 1px rgba(255, 246, 200, 0.4);
       }
 
       .icon-btn {
@@ -318,6 +348,11 @@ export class ReadingBeeReading extends LitElement {
   @state() private celebrateLevel = 1;
   @state() private badgeX = 0;
   @state() private badgeY = 0;
+  @state() private flyingCoin = false;
+  @state() private coinOriginX = 0;
+  @state() private coinOriginY = 0;
+  @state() private coinTargetX = 0;
+  @state() private coinTargetY = 0;
   private locked = false;
   private rippleSeq = 0;
 
@@ -349,6 +384,11 @@ export class ReadingBeeReading extends LitElement {
         <header>
           <button class="icon-btn" aria-label="Settings" @click=${this.openSettings}>${gearIcon}</button>
           <div class="header-right">
+            <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
+            <button class="coins" aria-label="Shop" @click=${() => navigate("shop")}>
+              <span class="coin-dot"></span>
+              ${profile.coins}
+            </button>
             <reading-bee-profile-modal>
               <button
                 slot="open-button"
@@ -358,7 +398,6 @@ export class ReadingBeeReading extends LitElement {
                 ${profileInitial(profile.name)}
               </button>
             </reading-bee-profile-modal>
-            <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
           </div>
         </header>
         <div class="stage">
@@ -384,6 +423,18 @@ export class ReadingBeeReading extends LitElement {
             <span class="ripple ${ripple.kind}" style="left:${ripple.x}px;top:${ripple.y}px"></span>
           `,
         )}
+        ${
+          this.flyingCoin
+            ? html`
+                <reading-bee-coin-flight
+                  .originX=${this.coinOriginX}
+                  .originY=${this.coinOriginY}
+                  .targetX=${this.coinTargetX}
+                  .targetY=${this.coinTargetY}
+                  @done=${this.onCoinDone}></reading-bee-coin-flight>
+              `
+            : ""
+        }
         ${
           this.celebrating
             ? html`
@@ -429,7 +480,10 @@ export class ReadingBeeReading extends LitElement {
     const previousLevel = appStore.currentProfile?.level ?? 0;
     this.locked = true;
     this.outgoing = current;
-    appStore.record(result);
+    const { awardedCoin } = appStore.record(result);
+    if (awardedCoin && !this.flyingCoin) {
+      this.startCoinFlight(event);
+    }
     const nextLevel = appStore.currentProfile?.level ?? 0;
     if (nextLevel > previousLevel) {
       this.startCelebration(nextLevel);
@@ -453,6 +507,35 @@ export class ReadingBeeReading extends LitElement {
 
   private onCelebrateDone = (): void => {
     this.celebrating = false;
+  };
+
+  private startCoinFlight(event?: Event): void {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const source =
+      event?.currentTarget instanceof HTMLElement
+        ? event.currentTarget
+        : this.renderRoot.querySelector(".score-btn.yes");
+    const target = this.renderRoot.querySelector(".coins");
+    if (source instanceof HTMLElement) {
+      const rect = source.getBoundingClientRect();
+      this.coinOriginX = rect.left + rect.width / 2;
+      this.coinOriginY = rect.top + rect.height / 2;
+    }
+    if (target instanceof HTMLElement) {
+      const rect = target.getBoundingClientRect();
+      this.coinTargetX = rect.left + 14;
+      this.coinTargetY = rect.top + rect.height / 2;
+    } else {
+      this.coinTargetX = window.innerWidth - 120;
+      this.coinTargetY = 36;
+    }
+    this.flyingCoin = true;
+  }
+
+  private onCoinDone = (): void => {
+    this.flyingCoin = false;
   };
 
   private spawnRipple(kind: "yes" | "no", event?: Event): void {
@@ -482,9 +565,9 @@ export class ReadingBeeReading extends LitElement {
     if (target && (target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "TEXTAREA")) {
       return;
     }
-    if (event.key === "Enter" || event.key === "c" || event.key === "ArrowRight") {
+    if (event.key === "Enter" || event.key === "c" || event.key === "ArrowLeft") {
       this.record("right");
-    } else if (event.key === "x" || event.key === "ArrowLeft") {
+    } else if (event.key === "x" || event.key === "ArrowRight") {
       this.record("wrong");
     } else if (event.key === "s") {
       this.record("skip");

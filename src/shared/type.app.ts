@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const STORAGE_KEY = "reading-bee:v1";
-export const APP_VERSION = 2;
+export const APP_VERSION = 3;
 export const MIN_LEVEL = 1;
 export const MAX_LEVEL = 100;
 export const LETTERS_MAX_LEVEL = 10;
@@ -63,6 +63,9 @@ export const Profile = z.object({
   wrongStreak: z.number().int().nonnegative(),
   textStats: z.record(z.string(), TextStat),
   events: z.array(ReadingEvent),
+  coins: z.number().int().nonnegative().default(0),
+  inventory: z.array(z.string()).default([]),
+  correctsUntilCoin: z.number().int().nonnegative().default(0),
 });
 export type Profile = z.infer<typeof Profile>;
 

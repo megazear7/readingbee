@@ -140,6 +140,9 @@ export const createProfile = (
     wrongStreak: 0,
     textStats: {},
     events: [],
+    coins: 0,
+    inventory: [],
+    correctsUntilCoin: 0,
   };
 };
 

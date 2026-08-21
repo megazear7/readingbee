@@ -80,6 +80,11 @@ export class ReadingBeeSettings extends LitElement {
         margin-top: 1.6rem;
       }
 
+      .instructions {
+        width: 100%;
+        margin-bottom: 0.4rem;
+      }
+
       .stack {
         display: grid;
         gap: 0.8rem;
@@ -474,6 +479,7 @@ export class ReadingBeeSettings extends LitElement {
       `;
     }
     return html`
+      <button class="muted-btn instructions" @click=${() => navigate("instructions")}>Instructions</button>
       <h2>Profiles</h2>
       <div class="stack">
         ${appStore.state.profiles.map((profile) => this.profileCard(profile))}
