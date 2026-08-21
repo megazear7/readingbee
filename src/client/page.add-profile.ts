@@ -76,8 +76,13 @@ export class ReadingBeeAddProfile extends LitElement {
       }
 
       h2 {
-        margin: 0.4rem 0 0;
+        margin: 0;
         font-size: 1.05rem;
+      }
+
+      .section {
+        display: grid;
+        gap: 0.4rem;
       }
 
       .bands {
@@ -158,29 +163,33 @@ export class ReadingBeeAddProfile extends LitElement {
             Profile name
             <input type="text" maxlength="40" placeholder="Student name" .value=${this.name} @input=${this.onName} />
           </label>
-          <h2>Reading level</h2>
-          <div class="bands">
-            ${READING_BANDS.map(
-              (band) => html`
-                <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
-                  <strong>${band.label}</strong>
-                  <span>${band.detail}</span>
-                </button>
-              `,
-            )}
+          <div class="section">
+            <h2>Reading level</h2>
+            <div class="bands">
+              ${READING_BANDS.map(
+                (band) => html`
+                  <button class="band" ?active=${this.band === band.id} @click=${() => (this.band = band.id)}>
+                    <strong>${band.label}</strong>
+                    <span>${band.detail}</span>
+                  </button>
+                `,
+              )}
+            </div>
           </div>
-          <h2>Color</h2>
-          <div class="pairs">
-            ${COLOR_PAIRS.map(
-              (pair, index) => html`
-                <button
-                  class="pair"
-                  ?selected=${this.colorPairIndex === index}
-                  style="background: linear-gradient(135deg, ${pair.primary} 0 50%, ${pair.secondary} 50% 100%);"
-                  aria-label="Color pair ${index + 1}"
-                  @click=${() => (this.colorPairIndex = index)}></button>
-              `,
-            )}
+          <div class="section">
+            <h2>Color pair</h2>
+            <div class="pairs">
+              ${COLOR_PAIRS.map(
+                (pair, index) => html`
+                  <button
+                    class="pair"
+                    ?selected=${this.colorPairIndex === index}
+                    style="background: linear-gradient(135deg, ${pair.primary} 0 50%, ${pair.secondary} 50% 100%);"
+                    aria-label="Color pair ${index + 1}"
+                    @click=${() => (this.colorPairIndex = index)}></button>
+                `,
+              )}
+            </div>
           </div>
           <button class="primary-btn" ?disabled=${!canSave} @click=${this.save}>Add profile</button>
         </div>
