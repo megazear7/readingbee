@@ -34,9 +34,9 @@ export class ReadingBeeSettings extends LitElement {
         position: sticky;
         top: 0;
         z-index: 2;
-        display: flex;
+        display: grid;
+        grid-template-columns: 44px 1fr 44px;
         align-items: center;
-        gap: 0.6rem;
         padding: calc(0.7rem + env(safe-area-inset-top)) 1rem 0.8rem;
         background: linear-gradient(to bottom, #0c0b09 70%, rgba(12, 11, 9, 0.86));
         border-bottom: 1px solid var(--color-panel-border);
@@ -45,6 +45,7 @@ export class ReadingBeeSettings extends LitElement {
       header h1 {
         margin: 0;
         font-size: 1.2rem;
+        text-align: center;
       }
 
       .back {
