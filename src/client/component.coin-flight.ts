@@ -2,13 +2,9 @@ import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 
 type Coin = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
   spin: number;
   vs: number;
-  r: number;
+  startR: number;
 };
 
 type Sparkle = {
@@ -21,6 +17,16 @@ type Sparkle = {
   r: number;
   rot: number;
   vr: number;
+};
+
+const DURATION = 2;
+const ARRIVE_AT = 1.7;
+
+const easeInOut = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+const quad = (start: number, control: number, end: number, t: number): number => {
+  const rest = 1 - t;
+  return rest * rest * start + 2 * rest * t * control + t * t * end;
 };
 
 @customElement("reading-bee-coin-flight")
@@ -52,11 +58,15 @@ export class ReadingBeeCoinFlight extends LitElement {
   private coin: Coin | null = null;
   private sparkles: Sparkle[] = [];
   private last = 0;
+  private started = 0;
+  private controlX = 0;
+  private controlY = 0;
   private finished = false;
 
   override firstUpdated(): void {
     this.spawn();
     this.last = performance.now();
+    this.started = this.last;
     this.frame = requestAnimationFrame(this.tick);
   }
 
@@ -79,18 +89,16 @@ export class ReadingBeeCoinFlight extends LitElement {
 
   private spawn(): void {
     this.coin = {
-      x: this.originX,
-      y: this.originY,
-      vx: (this.targetX - this.originX) * 1.15 + (Math.random() - 0.5) * 90,
-      vy: (this.targetY - this.originY) * 1.35 - 80 - Math.random() * 60,
       spin: Math.random() * Math.PI * 2,
       vs: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 8),
-      r: 15 + Math.random() * 4,
+      startR: 15 + Math.random() * 4,
     };
-    this.burst(this.originX, this.originY, 18);
+    this.controlX = (this.originX + this.targetX) / 2 + (Math.random() - 0.5) * 120;
+    this.controlY = Math.min(this.originY, this.targetY) - 40 - Math.random() * 50;
+    this.burst(this.originX, this.originY, 18, 0.28);
   }
 
-  private burst(x: number, y: number, count: number): void {
+  private burst(x: number, y: number, count: number, maxLife: number): void {
     for (let i = 0; i < count; i += 1) {
       const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
       const speed = 90 + Math.random() * 220;
@@ -100,7 +108,7 @@ export class ReadingBeeCoinFlight extends LitElement {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        maxLife: 0.18 + Math.random() * 0.16,
+        maxLife: maxLife * (0.7 + Math.random() * 0.3),
         r: 1.6 + Math.random() * 2.2,
         rot: Math.random() * Math.PI,
         vr: (Math.random() - 0.5) * 14,
@@ -111,6 +119,7 @@ export class ReadingBeeCoinFlight extends LitElement {
   private tick = (now: number): void => {
     const dt = Math.min(0.032, (now - this.last) / 1000);
     this.last = now;
+    const elapsed = (now - this.started) / 1000;
     const canvas = this.canvas;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -126,25 +135,16 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.clearRect(0, 0, width, height);
 
     const coin = this.coin;
-    if (coin) {
-      const dx = this.targetX - coin.x;
-      const dy = this.targetY - coin.y;
-      const dist = Math.hypot(dx, dy) || 1;
-      const pull = 4200 + dist * 6;
-      coin.vx += (dx / dist) * pull * dt;
-      coin.vy += (dy / dist) * pull * dt;
-      coin.vx *= 0.84;
-      coin.vy *= 0.84;
-      coin.x += coin.vx * dt;
-      coin.y += coin.vy * dt;
+    if (coin && elapsed < ARRIVE_AT) {
+      const u = easeInOut(Math.min(1, elapsed / ARRIVE_AT));
+      const x = quad(this.originX, this.controlX, this.targetX, u);
+      const y = quad(this.originY, this.controlY, this.targetY, u);
       coin.spin += coin.vs * dt;
-      coin.r = Math.max(7, coin.r - 18 * dt);
-      if (dist < 18) {
-        this.burst(this.targetX, this.targetY, 20);
-        this.coin = null;
-      } else {
-        this.drawCoin(ctx, coin);
-      }
+      const r = coin.startR * (1 - u * 0.48);
+      this.drawCoin(ctx, x, y, r, coin.spin);
+    } else if (coin) {
+      this.burst(this.targetX, this.targetY, 20, 0.26);
+      this.coin = null;
     }
 
     this.sparkles = this.sparkles.filter((sparkle) => sparkle.life < sparkle.maxLife);
@@ -158,7 +158,7 @@ export class ReadingBeeCoinFlight extends LitElement {
       this.drawSparkle(ctx, sparkle);
     }
 
-    if (!this.coin && this.sparkles.length === 0) {
+    if (elapsed >= DURATION) {
       if (!this.finished) {
         this.finished = true;
         this.dispatchEvent(new Event("done"));
@@ -197,20 +197,20 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.restore();
   }
 
-  private drawCoin(ctx: CanvasRenderingContext2D, coin: Coin): void {
+  private drawCoin(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, spin: number): void {
     ctx.save();
-    ctx.translate(coin.x, coin.y);
-    ctx.rotate(coin.spin * 0.15);
-    const squash = 0.55 + Math.abs(Math.cos(coin.spin)) * 0.45;
+    ctx.translate(x, y);
+    ctx.rotate(spin * 0.15);
+    const squash = 0.55 + Math.abs(Math.cos(spin)) * 0.45;
     ctx.scale(squash, 1);
-    const g = ctx.createRadialGradient(-coin.r * 0.3, -coin.r * 0.35, 2, 0, 0, coin.r);
+    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, 2, 0, 0, r);
     g.addColorStop(0, "#fff6c8");
     g.addColorStop(0.35, "#f3d27a");
     g.addColorStop(0.72, "#e8b84a");
     g.addColorStop(1, "#9a6c1e");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(0, 0, coin.r, 0, Math.PI * 2);
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = "rgba(255, 244, 196, 0.85)";
     ctx.lineWidth = 2;
@@ -218,11 +218,11 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.strokeStyle = "rgba(154, 108, 30, 0.55)";
     ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.arc(0, 0, coin.r * 0.62, 0, Math.PI * 2);
+    ctx.arc(0, 0, r * 0.62, 0, Math.PI * 2);
     ctx.stroke();
     ctx.fillStyle = "rgba(255, 246, 200, 0.7)";
     ctx.beginPath();
-    ctx.arc(-coin.r * 0.28, -coin.r * 0.3, coin.r * 0.18, 0, Math.PI * 2);
+    ctx.arc(-r * 0.28, -r * 0.3, r * 0.18, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
