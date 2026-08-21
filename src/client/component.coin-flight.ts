@@ -19,8 +19,16 @@ type Sparkle = {
   vr: number;
 };
 
+type Ring = {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  maxR: number;
+};
+
 const DURATION = 2;
-const ARRIVE_AT = 1.7;
+const ARRIVE_AT = 1.55;
 
 const easeInOut = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
@@ -57,6 +65,7 @@ export class ReadingBeeCoinFlight extends LitElement {
   private frame = 0;
   private coin: Coin | null = null;
   private sparkles: Sparkle[] = [];
+  private rings: Ring[] = [];
   private last = 0;
   private started = 0;
   private controlX = 0;
@@ -116,6 +125,27 @@ export class ReadingBeeCoinFlight extends LitElement {
     }
   }
 
+  private finishBurst(x: number, y: number): void {
+    this.rings.push({ x, y, life: 0, maxLife: 0.4, maxR: 56 });
+    this.rings.push({ x, y, life: 0, maxLife: 0.22, maxR: 28 });
+    for (let i = 0; i < 36; i += 1) {
+      const angle = (Math.PI * 2 * i) / 36 + Math.random() * 0.28;
+      const big = i % 5 === 0;
+      const speed = big ? 180 + Math.random() * 260 : 120 + Math.random() * 280;
+      this.sparkles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 40,
+        life: 0,
+        maxLife: (big ? 0.4 : 0.32) * (0.78 + Math.random() * 0.22),
+        r: big ? 3.4 + Math.random() * 2.2 : 1.8 + Math.random() * 2.2,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 18,
+      });
+    }
+  }
+
   private tick = (now: number): void => {
     const dt = Math.min(0.032, (now - this.last) / 1000);
     this.last = now;
@@ -143,8 +173,14 @@ export class ReadingBeeCoinFlight extends LitElement {
       const r = coin.startR * (1 - u * 0.48);
       this.drawCoin(ctx, x, y, r, coin.spin);
     } else if (coin) {
-      this.burst(this.targetX, this.targetY, 20, 0.26);
+      this.finishBurst(this.targetX, this.targetY);
       this.coin = null;
+    }
+
+    this.rings = this.rings.filter((ring) => ring.life < ring.maxLife);
+    for (const ring of this.rings) {
+      ring.life += dt;
+      this.drawRing(ctx, ring);
     }
 
     this.sparkles = this.sparkles.filter((sparkle) => sparkle.life < sparkle.maxLife);
@@ -169,6 +205,32 @@ export class ReadingBeeCoinFlight extends LitElement {
     this.frame = requestAnimationFrame(this.tick);
   };
 
+  private drawRing(ctx: CanvasRenderingContext2D, ring: Ring): void {
+    const t = ring.life / ring.maxLife;
+    const alpha = Math.max(0, 1 - t);
+    const radius = 6 + t * ring.maxR;
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.strokeStyle = "#fff6c8";
+    ctx.lineWidth = 3.2 * (1 - t * 0.55);
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(232, 184, 74, 0.85)";
+    ctx.lineWidth = 1.6 * (1 - t);
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, radius * 0.72, 0, Math.PI * 2);
+    ctx.stroke();
+    const glow = ctx.createRadialGradient(ring.x, ring.y, 2, ring.x, ring.y, radius * 0.55);
+    glow.addColorStop(0, `rgba(255, 246, 200, ${0.55 * alpha})`);
+    glow.addColorStop(1, "rgba(232, 184, 74, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, radius * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   private drawSparkle(ctx: CanvasRenderingContext2D, sparkle: Sparkle): void {
     const t = sparkle.life / sparkle.maxLife;
     const alpha = t < 0.2 ? t / 0.2 : 1 - (t - 0.2) / 0.8;
@@ -177,6 +239,13 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.translate(sparkle.x, sparkle.y);
     ctx.rotate(sparkle.rot);
     ctx.globalAlpha = Math.max(0, alpha);
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.4);
+    glow.addColorStop(0, "rgba(255, 246, 200, 0.85)");
+    glow.addColorStop(1, "rgba(232, 184, 74, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 2.4, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#fff6c8";
     ctx.beginPath();
     ctx.moveTo(0, -r * 2.1);
