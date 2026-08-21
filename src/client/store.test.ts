@@ -57,6 +57,19 @@ describe("AppStore", () => {
     assert.equal(store.instructorUnlocked, false);
   });
 
+  it("imports a shared profile as current without keeping its id", () => {
+    const source = new AppStore(memoryStorage());
+    source.createFirstProfile("Ava", "words");
+    const shared = source.currentProfile!;
+    const target = new AppStore(memoryStorage());
+    target.createFirstProfile("Old", "phrases");
+    const imported = target.importSharedProfile(shared);
+    assert.equal(target.state.profiles.length, 2);
+    assert.equal(imported.name, "Ava");
+    assert.notEqual(imported.id, shared.id);
+    assert.equal(target.currentProfile?.id, imported.id);
+  });
+
   it("replaces all data on import", () => {
     const source = new AppStore(memoryStorage());
     source.createFirstProfile("Ava", "words");

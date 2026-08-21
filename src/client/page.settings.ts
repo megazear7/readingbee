@@ -1,12 +1,14 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
+import { profileShareUrl, shouldNativeShare } from "../shared/profile-share.js";
 import { Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
-import { backIcon, downloadIcon, trashIcon, uploadIcon } from "./icons.js";
+import { WarningEvent } from "./event.warning.js";
+import { backIcon, downloadIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -179,11 +181,17 @@ export class ReadingBeeSettings extends LitElement {
         flex-wrap: wrap;
       }
 
-      .icon-delete {
+      .icon-delete,
+      .icon-share {
         min-width: 40px;
         min-height: 40px;
         padding: 0.35rem;
         flex: 0 0 auto;
+      }
+
+      .icon-share:hover {
+        color: var(--color-1);
+        background: rgba(232, 184, 74, 0.14);
       }
 
       .icon-delete:hover {
@@ -366,6 +374,9 @@ export class ReadingBeeSettings extends LitElement {
           </button>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level">Lv ${profile.level}</div>
+          <button class="muted-btn icon-share" aria-label="Share profile" @click=${() => this.shareProfile(profile)}>
+            ${shareIcon}
+          </button>
           <button class="muted-btn icon-delete" aria-label="Remove profile" @click=${() => this.openDelete(profile.id)}>
             ${trashIcon}
           </button>
@@ -505,6 +516,27 @@ export class ReadingBeeSettings extends LitElement {
   private rename(id: string, event: Event): void {
     appStore.renameProfile(id, (event.target as HTMLInputElement).value);
   }
+
+  private shareProfile = async (profile: Profile): Promise<void> => {
+    const url = profileShareUrl(profile);
+    try {
+      if (shouldNativeShare()) {
+        await navigator.share({
+          title: "Reading Bee",
+          text: `Add ${profile.name}'s Reading Bee profile`,
+          url,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      dispatch(this, SuccessEvent("Link copied"));
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+      dispatch(this, WarningEvent("Could not share this profile"));
+    }
+  };
 
   private download = (): void => {
     const blob = new Blob([appStore.exportJson()], { type: "application/json" });

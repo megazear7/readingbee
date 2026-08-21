@@ -2,6 +2,7 @@ import { applyColorPair, createProfile, ensureCurrentText, recordAndPickNext } f
 import { corpus, corpusById } from "../shared/corpus.js";
 import { clearState, loadState, saveState, StorageLike } from "../shared/storage.js";
 import { AppState, PASSCODE_LENGTH, Profile, ReadingBand, ReadingText, ResultKind } from "../shared/type.app.js";
+import { createId } from "../shared/util.id.js";
 
 export class AppStore extends EventTarget {
   state: AppState;
@@ -136,6 +137,17 @@ export class AppStore extends EventTarget {
 
   exportJson(): string {
     return JSON.stringify(this.state, null, 2);
+  }
+
+  importSharedProfile(incoming: Profile): Profile {
+    const profile = ensureCurrentText({ ...incoming, id: createId() }, corpus);
+    this.state = {
+      ...this.state,
+      profiles: [...this.state.profiles, profile],
+      currentProfileId: profile.id,
+    };
+    this.persist();
+    return profile;
   }
 
   importState(next: AppState): void {

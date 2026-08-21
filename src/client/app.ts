@@ -6,6 +6,7 @@ import { AppView } from "./event.view.js";
 import { pathForView, viewFromPath } from "./nav.js";
 import { WarningEventName } from "./event.warning.js";
 import { appStore } from "./store.js";
+import "./component.import-profile.js";
 import "./component.onboarding.js";
 import "./component.toast.js";
 import "./page.add-profile.js";
@@ -62,6 +63,7 @@ export class ReadingBeeApp extends LitElement {
               `;
     return html`
       ${page}
+      <reading-bee-import-profile></reading-bee-import-profile>
       <reading-bee-toast></reading-bee-toast>
     `;
   }

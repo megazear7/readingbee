@@ -220,6 +220,15 @@ try {
     return !pad && (cards?.length ?? 0) >= 2;
   });
 
+  const shareCount = await withPage(
+    page,
+    ["reading-bee-settings", "shadow"],
+    "return node.querySelectorAll('button.icon-share').length;",
+  );
+  if (shareCount < 2) {
+    throw new Error(`Expected share buttons, found ${shareCount}`);
+  }
+
   await click(page, ["reading-bee-settings", "shadow", "button.icon-delete"]);
   await page.waitForFunction(() => {
     const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".delete-modal");
@@ -268,6 +277,69 @@ try {
     const prompt = reading?.shadowRoot?.querySelector(".prompt");
     return Boolean(prompt?.textContent.trim());
   });
+
+  const sharedProfile = {
+    id: "share-sam",
+    name: "Sam",
+    colorPairIndex: 2,
+    primaryColor: "#5BA4E8",
+    secondaryColor: "#CDE6F7",
+    band: "words",
+    level: 1,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    currentTextId: null,
+    lastTextId: null,
+    recentTextIds: [],
+    boostActive: false,
+    boostLevel: 1,
+    correctStreak: 0,
+    wrongStreak: 0,
+    textStats: {},
+    events: [],
+  };
+  await page.goto(`${BASE}/?profile=${encodeURIComponent(JSON.stringify(sharedProfile))}`, {
+    waitUntil: "networkidle0",
+    timeout: 20000,
+  });
+  await page.waitForSelector("reading-bee-import-profile", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-import-profile")?.shadowRoot?.querySelector("reading-bee-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    return backdrop?.classList.contains("visible");
+  });
+  const importTitle = await textOf(page, ["reading-bee-import-profile", "shadow", "h2"]);
+  if (importTitle !== "Add Sam?") {
+    throw new Error(`Import modal showed ${importTitle}`);
+  }
+  await click(page, ["reading-bee-import-profile", "shadow", "button.primary-btn"]);
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-import-profile")?.shadowRoot?.querySelector("reading-bee-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    const closing =
+      backdrop?.classList.contains("visible") ||
+      backdrop?.classList.contains("opening") ||
+      backdrop?.classList.contains("closing");
+    return !closing;
+  });
+  await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const reading = document.querySelector("reading-bee-reading");
+    const prompt = reading?.shadowRoot?.querySelector(".prompt");
+    return Boolean(prompt?.textContent.trim());
+  });
+  await click(page, ["reading-bee-reading", "shadow", "button.avatar"]);
+  await page.waitForFunction(() => {
+    const modal = document
+      .querySelector("reading-bee-reading")
+      ?.shadowRoot?.querySelector("reading-bee-profile-modal")
+      ?.shadowRoot?.querySelector("reading-bee-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    return backdrop?.classList.contains("visible") || backdrop?.classList.contains("opening");
+  });
+  const importedName = await textOf(page, [...readingProfile, "h2"]);
+  if (importedName !== "Sam") {
+    throw new Error(`Imported profile showed ${importedName}`);
+  }
 
   console.log("e2e ok");
   console.log(JSON.stringify({ firstPrompt, secondPrompt }, null, 2));
