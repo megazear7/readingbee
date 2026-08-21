@@ -12,7 +12,7 @@ import {
   STARTING_LEVEL,
   textWeight,
 } from "./algorithm.js";
-import { ReadingText } from "./type.app.js";
+import { Profile, ReadingText } from "./type.app.js";
 
 const seedRng = (seed = 1): Rng => {
   let value = seed;
@@ -51,6 +51,9 @@ const makeCorpus = (): ReadingText[] => {
 
 const corpus = makeCorpus();
 const byId = Object.fromEntries(corpus.map((item) => [item.id, item]));
+
+const score = (profile: Profile, textId: string, result: "right" | "wrong" | "skip" | "wayTooEasy"): Profile =>
+  applyResult(profile, byId[textId], result, seedRng(2), new Date(), corpus);
 
 describe("createProfile", () => {
   it("starts at the band level with auto colors", () => {
@@ -106,13 +109,38 @@ describe("pickNext", () => {
     const next = pickNext(profile, corpus, seedRng(9));
     assert.equal(next.level, STARTING_LEVEL.phrases);
   });
+
+  it("stays on a letter level until every sound has been seen", () => {
+    let profile = createProfile("Ava", "letters", []);
+    const seen = new Set<string>();
+    for (let i = 0; i < 8; i += 1) {
+      const next = pickNext(profile, corpus, seedRng(i + 3));
+      assert.equal(next.level, 1);
+      seen.add(next.id);
+      profile = score(profile, next.id, "right");
+    }
+    assert.equal(seen.size, 8);
+  });
+
+  it("prefers unseen letter sounds over repeats", () => {
+    const profile = score(createProfile("Ava", "letters", []), "t-1-0", "right");
+    const seen = new Set<string>();
+    let current = profile;
+    for (let i = 0; i < 7; i += 1) {
+      const next = pickNext(current, corpus, seedRng(20 + i));
+      assert.notEqual(next.id, "t-1-0");
+      assert.equal(seen.has(next.id), false);
+      seen.add(next.id);
+      current = score(current, next.id, "right");
+    }
+  });
 });
 
 describe("applyResult", () => {
   it("records skip without changing level or weights", () => {
     const profile = createProfile("Ava", "letters", []);
     const text = byId["t-1-0"];
-    const next = applyResult(profile, text, "skip", seedRng(1));
+    const next = applyResult(profile, text, "skip", seedRng(1), new Date(), corpus);
     assert.equal(next.level, profile.level);
     assert.equal(next.correctStreak, 0);
     assert.equal(next.wrongStreak, 0);
@@ -125,28 +153,50 @@ describe("applyResult", () => {
     const text = byId["t-1-1"];
     let profile = createProfile("Ava", "letters", []);
     const startWeight = 1;
-    profile = applyResult(profile, text, "right", seedRng(1));
+    profile = applyResult(profile, text, "right", seedRng(1), new Date(), corpus);
     assert.ok(textWeight(profile.textStats[text.id]) < startWeight);
-    profile = applyResult(profile, text, "right", seedRng(1));
-    profile = applyResult(profile, text, "right", seedRng(1));
+    profile = applyResult(profile, text, "right", seedRng(1), new Date(), corpus);
+    profile = applyResult(profile, text, "right", seedRng(1), new Date(), corpus);
     assert.equal(profile.textStats[text.id].retired, true);
     assert.equal(profile.textStats[text.id].correct, ALGORITHM.retireCorrectCount);
   });
 
-  it("increases level after enough consecutive correct reads", () => {
+  it("does not leave a letter level until every sound is mastered, even after a long streak", () => {
     let profile = createProfile("Ava", "letters", []);
     for (let i = 0; i < ALGORITHM.levelUpStreak; i += 1) {
-      const text = byId[`t-1-${i}`];
-      profile = applyResult(profile, text, "right", seedRng(2));
+      profile = score(profile, `t-1-${i % 4}`, "right");
+    }
+    assert.equal(profile.level, 1);
+    assert.ok(profile.correctStreak >= ALGORITHM.levelUpStreak);
+  });
+
+  it("levels up letters only after every sound is seen and the slow streak is met", () => {
+    let profile = createProfile("Ava", "letters", []);
+    for (let i = 0; i < 8; i += 1) {
+      profile = score(profile, `t-1-${i}`, "right");
+    }
+    assert.equal(profile.level, 1);
+    const remaining = ALGORITHM.levelUpStreak - profile.correctStreak;
+    for (let i = 0; i < remaining; i += 1) {
+      profile = score(profile, `t-1-${i % 8}`, "right");
     }
     assert.equal(profile.level, 2);
+    assert.equal(profile.correctStreak, 0);
+  });
+
+  it("increases a word level after enough consecutive correct reads without covering the whole level", () => {
+    let profile = { ...createProfile("Ava", "words", []), level: 12, boostLevel: 12 };
+    for (let i = 0; i < ALGORITHM.levelUpStreak; i += 1) {
+      profile = score(profile, `t-12-${i % 3}`, "right");
+    }
+    assert.equal(profile.level, 13);
     assert.equal(profile.correctStreak, 0);
   });
 
   it("makes a wrong text more likely, but not immediately", () => {
     const text = byId["t-1-2"];
     let profile = createProfile("Ava", "letters", []);
-    profile = applyResult(profile, text, "wrong", seedRng(4));
+    profile = applyResult(profile, text, "wrong", seedRng(4), new Date(), corpus);
     assert.ok(textWeight(profile.textStats[text.id]) > 1);
     assert.ok(profile.textStats[text.id].cooldown >= ALGORITHM.wrongCooldownMin);
     const next = pickNext(profile, corpus, seedRng(4));
@@ -156,42 +206,70 @@ describe("applyResult", () => {
   it("drops a level after enough consecutive wrongs", () => {
     let profile = { ...createProfile("Ava", "phrases", []), level: STARTING_LEVEL.phrases };
     for (let i = 0; i < ALGORITHM.levelDownStreak; i += 1) {
-      profile = applyResult(profile, byId[`t-${STARTING_LEVEL.phrases}-${i}`], "wrong", seedRng(6));
+      profile = applyResult(profile, byId[`t-${STARTING_LEVEL.phrases}-${i}`], "wrong", seedRng(6), new Date(), corpus);
     }
     assert.equal(profile.level, STARTING_LEVEL.phrases - 1);
   });
 
-  it("jumps multiple levels on way too easy and stays high while correct", () => {
+  it("does not jump letter levels on way too easy", () => {
     let profile = createProfile("Ava", "letters", []);
-    const first = byId["t-1-0"];
+    profile = recordAndPickNext(profile, byId["t-1-0"], "wayTooEasy", corpus, seedRng(8));
+    assert.equal(profile.boostActive, false);
+    assert.equal(profile.level, 1);
+    assert.equal(byId[profile.currentTextId!].level, 1);
+  });
+
+  it("jumps multiple levels on way too easy once the student is in words", () => {
+    let profile = {
+      ...createProfile("Ava", "words", []),
+      level: STARTING_LEVEL.words,
+      boostLevel: STARTING_LEVEL.words,
+    };
+    const first = byId[`t-${STARTING_LEVEL.words}-0`];
     profile = recordAndPickNext(profile, first, "wayTooEasy", corpus, seedRng(8));
     assert.equal(profile.boostActive, true);
-    assert.equal(profile.boostLevel, 1 + ALGORITHM.easyJump);
+    assert.equal(profile.boostLevel, STARTING_LEVEL.words + ALGORITHM.easyJump);
     assert.ok(profile.currentTextId);
     const boosted = byId[profile.currentTextId!];
-    assert.equal(boosted.level, 1 + ALGORITHM.easyJump);
+    assert.equal(boosted.level, STARTING_LEVEL.words + ALGORITHM.easyJump);
 
     profile = recordAndPickNext(profile, boosted, "right", corpus, seedRng(8));
     assert.equal(profile.boostActive, true);
     const again = byId[profile.currentTextId!];
-    assert.equal(again.level, 1 + ALGORITHM.easyJump);
+    assert.equal(again.level, STARTING_LEVEL.words + ALGORITHM.easyJump);
   });
 
   it("sets the higher level after enough correct boosted reads", () => {
-    let profile = createProfile("Ava", "letters", []);
-    profile = applyResult(profile, byId["t-1-0"], "wayTooEasy", seedRng(11));
+    let profile = {
+      ...createProfile("Ava", "words", []),
+      level: STARTING_LEVEL.words,
+      boostLevel: STARTING_LEVEL.words,
+    };
+    const jump = STARTING_LEVEL.words + ALGORITHM.easyJump;
+    profile = applyResult(profile, byId[`t-${STARTING_LEVEL.words}-0`], "wayTooEasy", seedRng(11), new Date(), corpus);
     for (let i = 0; i < ALGORITHM.levelUpStreak; i += 1) {
-      profile = applyResult(profile, byId[`t-9-${i}`], "right", seedRng(11));
+      profile = applyResult(profile, byId[`t-${jump}-${i % 8}`], "right", seedRng(11), new Date(), corpus);
     }
-    assert.equal(profile.level, 1 + ALGORITHM.easyJump + 1);
+    assert.equal(profile.level, jump + 1);
     assert.equal(profile.boostActive, false);
   });
 
   it("leaves boost on a wrong without dropping the original level", () => {
-    let profile = createProfile("Ava", "letters", []);
-    profile = applyResult(profile, byId["t-1-0"], "wayTooEasy", seedRng(12));
-    profile = applyResult(profile, byId["t-9-0"], "wrong", seedRng(12));
+    let profile = {
+      ...createProfile("Ava", "words", []),
+      level: STARTING_LEVEL.words,
+      boostLevel: STARTING_LEVEL.words,
+    };
+    profile = applyResult(profile, byId[`t-${STARTING_LEVEL.words}-0`], "wayTooEasy", seedRng(12), new Date(), corpus);
+    profile = applyResult(
+      profile,
+      byId[`t-${STARTING_LEVEL.words + ALGORITHM.easyJump}-0`],
+      "wrong",
+      seedRng(12),
+      new Date(),
+      corpus,
+    );
     assert.equal(profile.boostActive, false);
-    assert.equal(profile.level, 1);
+    assert.equal(profile.level, STARTING_LEVEL.words);
   });
 });
