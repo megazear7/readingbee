@@ -2,6 +2,7 @@ import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
 import { sampleTextAtLevel } from "../shared/corpus.js";
+import { pictureFor } from "../shared/letter-pictures.js";
 import { profileShareUrl, shouldNativeShare } from "../shared/profile-share.js";
 import { MAX_LEVEL, MIN_LEVEL, Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
@@ -196,11 +197,23 @@ export class ReadingBeeSettings extends LitElement {
         border: 1px solid var(--color-panel-border);
         display: grid;
         place-items: center;
+        gap: 0.7rem;
         padding: 1.1rem 1rem;
         text-align: center;
         font-family: var(--font-reading);
         font-weight: 500;
         line-height: 1.35;
+      }
+
+      .sample.has-picture {
+        min-height: 9rem;
+      }
+
+      .sample .picture {
+        width: 88px;
+        height: 88px;
+        object-fit: cover;
+        border-radius: 18px;
       }
 
       .sample[data-kind="letter"] {
@@ -539,6 +552,7 @@ export class ReadingBeeSettings extends LitElement {
       return html``;
     }
     const sample = sampleTextAtLevel(this.draftLevel);
+    const picture = sample ? pictureFor(sample) : undefined;
     return html`
       <div class="level-form">
         <h2 class="picker-title">Set exact level</h2>
@@ -560,7 +574,16 @@ export class ReadingBeeSettings extends LitElement {
             @input=${this.onDraftLevel} />
         </div>
         <p class="sample-label">Sample at level ${this.draftLevel}</p>
-        <div class="sample" data-kind=${sample?.kind ?? "word"}>${sample?.text ?? ""}</div>
+        <div class="sample ${picture ? "has-picture" : ""}" data-kind=${sample?.kind ?? "word"}>
+          <span>${sample?.text ?? ""}</span>
+          ${
+            picture
+              ? html`
+                  <img class="picture" src=${picture} alt="" aria-hidden="true" />
+                `
+              : ""
+          }
+        </div>
         <div class="confirm-row">
           <button class="ghost-btn" @click=${() => this.levelModal.close()}>Cancel</button>
           <button class="primary-btn" @click=${this.saveLevel}>Save level</button>
