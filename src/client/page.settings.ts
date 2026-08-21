@@ -191,6 +191,9 @@ export class ReadingBeeSettings extends LitElement {
         padding: 0.9rem;
         color: var(--color-primary-text-muted);
         font-weight: 700;
+        transition:
+          border-color var(--time-normal) ease,
+          color var(--time-normal) ease;
       }
 
       .skeleton:hover {
@@ -204,6 +207,11 @@ export class ReadingBeeSettings extends LitElement {
         border-radius: 50%;
         border: 2px dashed rgba(244, 234, 213, 0.28);
         flex: 0 0 auto;
+        transition: border-color var(--time-normal) ease;
+      }
+
+      .skeleton:hover .ghost-swatch {
+        border-color: var(--color-1);
       }
     `,
   ];
