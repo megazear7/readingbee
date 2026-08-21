@@ -76,13 +76,16 @@ export class ReadingBeeAddProfile extends LitElement {
       }
 
       h2 {
-        margin: 0;
-        font-size: 1.05rem;
+        margin: 0.2rem 0 0;
+        font-size: 0.92rem;
+        font-weight: 400;
+        letter-spacing: 0;
+        color: var(--color-primary-text-muted);
       }
 
       .section {
         display: grid;
-        gap: 0.4rem;
+        gap: 0.2rem;
       }
 
       .bands {
