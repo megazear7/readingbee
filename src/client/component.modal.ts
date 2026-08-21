@@ -174,6 +174,6 @@ export class ReadingBeeModal extends LitElement {
     await wait(ANIMATION_SPEED);
     this.closing = false;
     this.visible = false;
-    window.document.body.style.overflow = "auto";
+    window.document.body.style.overflow = "";
   }
 }

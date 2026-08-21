@@ -21,7 +21,9 @@ export class ReadingBeeReading extends LitElement {
     css`
       :host {
         display: block;
-        min-height: 100%;
+        height: 100%;
+        max-height: 100svh;
+        overflow: hidden;
       }
 
       .screen.is-celebrating header {
@@ -29,10 +31,13 @@ export class ReadingBeeReading extends LitElement {
       }
 
       .screen {
-        min-height: 100dvh;
+        height: 100%;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
         display: grid;
-        grid-template-rows: auto 1fr auto;
-        padding: calc(0.7rem + env(safe-area-inset-top)) 1.2rem calc(2.4rem + env(safe-area-inset-bottom));
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        padding: calc(0.7rem + env(safe-area-inset-top)) 1.2rem calc(0.85rem + env(safe-area-inset-bottom));
       }
 
       header {
@@ -187,6 +192,7 @@ export class ReadingBeeReading extends LitElement {
       .stage {
         display: grid;
         place-items: center;
+        min-height: 0;
         padding: 1rem;
         overflow: hidden;
         width: 100%;
@@ -216,8 +222,8 @@ export class ReadingBeeReading extends LitElement {
       }
 
       .picture {
-        width: min(42vw, 176px);
-        height: min(42vw, 176px);
+        width: min(42vw, 176px, 28svh);
+        height: min(42vw, 176px, 28svh);
         object-fit: contain;
         filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.38));
       }
@@ -345,14 +351,14 @@ export class ReadingBeeReading extends LitElement {
         border-top-color: #1a1713;
       }
 
-      .tip-wrap:focus-within .tip {
+      .tip-wrap:focus-within:not(.is-dismissed) .tip {
         opacity: 1;
         visibility: visible;
         transform: translateX(-50%) translateY(0);
       }
 
       @media (hover: hover) and (pointer: fine) {
-        .tip-wrap:hover .tip {
+        .tip-wrap:hover:not(.is-dismissed) .tip {
           opacity: 1;
           visibility: visible;
           transform: translateX(-50%) translateY(0);
@@ -478,6 +484,7 @@ export class ReadingBeeReading extends LitElement {
   @state() private outgoingPicture: string | undefined;
   @state() private appUpdated = false;
   @state() private updateChipLeaving = false;
+  @state() private tipsDismissed = false;
   private locked = false;
   private pendingLevelUp = 0;
   private rippleSeq = 0;
@@ -557,7 +564,7 @@ export class ReadingBeeReading extends LitElement {
         </div>
         <footer>
           <div class="action">
-            <div class="tip-wrap">
+            <div class="tip-wrap ${this.tipsDismissed ? "is-dismissed" : ""}" @pointerleave=${this.restoreTipsOnLeave}>
               <button
                 class="score-btn yes"
                 aria-label="Mastered this one"
@@ -569,7 +576,7 @@ export class ReadingBeeReading extends LitElement {
             <button class="muted" @click=${() => this.record("wayTooEasy")}>Way too easy</button>
           </div>
           <div class="action">
-            <div class="tip-wrap">
+            <div class="tip-wrap ${this.tipsDismissed ? "is-dismissed" : ""}" @pointerleave=${this.restoreTipsOnLeave}>
               <button
                 class="score-btn no"
                 aria-label="Needs more practice"
@@ -637,7 +644,22 @@ export class ReadingBeeReading extends LitElement {
     navigate("settings");
   };
 
+  private restoreTipsOnLeave = (event: PointerEvent): void => {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    this.tipsDismissed = false;
+  };
+
+  private dismissTips(event?: Event): void {
+    this.tipsDismissed = true;
+    if (event?.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
+  }
+
   private record(result: ResultKind, event?: Event): void {
+    this.dismissTips(event);
     if (this.locked || this.celebrating) return;
     const current = appStore.currentText;
     if (!current) return;
