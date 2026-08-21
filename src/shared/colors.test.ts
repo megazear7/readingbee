@@ -20,6 +20,13 @@ describe("readableTextColor", () => {
   });
 });
 
+describe("COLOR_PAIRS", () => {
+  it("fills a 6-column grid with no leftover cells", () => {
+    assert.equal(COLOR_PAIRS.length, 24);
+    assert.equal(COLOR_PAIRS.length % 6, 0);
+  });
+});
+
 describe("profileInitial", () => {
   it("uses the first letter, uppercased", () => {
     assert.equal(profileInitial("ava"), "A");

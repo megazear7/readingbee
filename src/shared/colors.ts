@@ -24,6 +24,10 @@ export const COLOR_PAIRS: ColorPair[] = [
   { primary: "#A34B6B", secondary: "#E8C2D0" },
   { primary: "#4A67C7", secondary: "#C3CEF0" },
   { primary: "#B57A3C", secondary: "#EBD3B3" },
+  { primary: "#E15B8A", secondary: "#F5C5D4" },
+  { primary: "#6B8F3A", secondary: "#D4E6B5" },
+  { primary: "#C47A2C", secondary: "#F0D4A8" },
+  { primary: "#5C8C8C", secondary: "#C5DEDE" },
 ];
 
 export const nextColorPairIndex = (usedIndexes: number[]): number => {
