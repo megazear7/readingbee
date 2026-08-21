@@ -118,6 +118,21 @@ describe("AppStore", () => {
     }
   });
 
+  it("counts a wrong answer as half a correct toward the next coin", () => {
+    const store = new AppStore(memoryStorage());
+    store.createFirstProfile("Ava", "words");
+    store.record("right");
+    const afterRight = store.currentProfile!.correctsUntilCoin;
+    assert.equal(afterRight > 0.5, true);
+    store.record("wrong");
+    assert.equal(store.currentProfile?.correctsUntilCoin, afterRight - 0.5);
+    store.record("wrong");
+    assert.equal(store.currentProfile?.correctsUntilCoin, afterRight - 1);
+    const afterWrongs = store.currentProfile!.correctsUntilCoin;
+    store.record("skip");
+    assert.equal(store.currentProfile?.correctsUntilCoin, afterWrongs);
+  });
+
   it("imports a shared profile as current without keeping its id", () => {
     const source = new AppStore(memoryStorage());
     source.createFirstProfile("Ava", "words");

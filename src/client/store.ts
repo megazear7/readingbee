@@ -126,12 +126,13 @@ export class AppStore extends EventTarget {
     if (!profile || !text) return { awardedCoin: false };
     let next = recordAndPickNext(profile, text, result, corpus);
     let awardedCoin = false;
-    if (result === "right") {
+    const credit = result === "right" ? 1 : result === "wrong" ? 0.5 : 0;
+    if (credit > 0) {
       let until = next.correctsUntilCoin;
       if (until <= 0) {
         until = defaultRng.int(3, 6);
       }
-      until -= 1;
+      until -= credit;
       if (until <= 0) {
         awardedCoin = true;
         next = { ...next, coins: next.coins + 1, correctsUntilCoin: defaultRng.int(3, 6) };
