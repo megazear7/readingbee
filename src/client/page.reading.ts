@@ -22,7 +22,7 @@ export class ReadingBeeReading extends LitElement {
         min-height: 100dvh;
         display: grid;
         grid-template-rows: auto 1fr auto;
-        padding: calc(0.7rem + env(safe-area-inset-top)) 1.2rem calc(1.1rem + env(safe-area-inset-bottom));
+        padding: calc(0.7rem + env(safe-area-inset-top)) 1.2rem calc(2.4rem + env(safe-area-inset-bottom));
       }
 
       header {
