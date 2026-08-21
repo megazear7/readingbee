@@ -145,7 +145,7 @@ export class ReadingBeeSettings extends LitElement {
         width: 100%;
         aspect-ratio: 1;
         height: auto;
-        border-radius: 10px;
+        border-radius: 50%;
         border: 3px solid transparent;
       }
 
