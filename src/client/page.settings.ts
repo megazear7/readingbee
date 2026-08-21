@@ -187,10 +187,11 @@ export class ReadingBeeSettings extends LitElement {
         flex: 1;
         border-radius: 0;
         min-width: 0;
+        position: relative;
       }
 
       .data-actions .ghost-btn + .ghost-btn {
-        border-left-width: 0;
+        margin-left: -1px;
       }
 
       .data-actions .ghost-btn:first-child {
