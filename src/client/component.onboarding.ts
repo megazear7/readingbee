@@ -69,11 +69,25 @@ export class ReadingBeeOnboarding extends LitElement {
         border: 1px solid var(--color-panel-border);
         display: grid;
         gap: 0.15rem;
+        transition:
+          border-color var(--time-normal) ease,
+          box-shadow var(--time-normal) ease,
+          background var(--time-normal) ease;
+      }
+
+      .band:hover {
+        border-color: var(--color-1);
+        background: #221e18;
       }
 
       .band[active] {
         border-color: var(--color-1);
         box-shadow: 0 0 0 3px rgba(232, 184, 74, 0.16);
+      }
+
+      .band[active]:hover {
+        background: #221e18;
+        box-shadow: 0 0 0 3px rgba(232, 184, 74, 0.28);
       }
 
       .band strong {
