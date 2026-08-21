@@ -124,4 +124,16 @@ export const globalStyles = css`
   .muted-btn:hover {
     color: var(--color-primary-text);
   }
+
+  .back {
+    transition:
+      border-color var(--time-normal) ease,
+      color var(--time-normal) ease,
+      background var(--time-normal) ease;
+  }
+
+  .back:hover {
+    color: var(--color-1);
+    border-color: var(--color-1);
+  }
 `;

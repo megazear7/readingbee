@@ -60,26 +60,53 @@ export class ReadingBeeProfileModal extends LitElement {
 
       .stats {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.6rem;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
         margin: 1rem 0 1.3rem;
       }
 
       .stat {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
         background: #1a1713;
         border: 1px solid var(--color-panel-border);
         border-radius: 16px;
-        padding: 0.8rem;
+        padding: 0.7rem 0.9rem;
       }
 
       .stat b {
-        display: block;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
       }
 
       .stat span {
         color: var(--color-primary-text-muted);
         font-size: 0.82rem;
+      }
+
+      @media (min-width: 600px) {
+        .stats {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .stat {
+          display: grid;
+          flex-direction: unset;
+          justify-items: center;
+          text-align: center;
+          padding: 0.7rem 0.3rem;
+          gap: 0.12rem;
+        }
+
+        .stat b {
+          font-size: 1.1rem;
+        }
+
+        .stat span {
+          font-size: 0.72rem;
+        }
       }
 
       .list {
@@ -170,8 +197,12 @@ export class ReadingBeeProfileModal extends LitElement {
                       <span>Wrong</span>
                     </div>
                     <div class="stat">
-                      <b>${stats.skip + stats.wayTooEasy}</b>
-                      <span>Skipped / easy</span>
+                      <b>${stats.skip}</b>
+                      <span>Skipped</span>
+                    </div>
+                    <div class="stat">
+                      <b>${stats.wayTooEasy}</b>
+                      <span>Easy</span>
                     </div>
                   </div>
                   <h2>Switch profile</h2>

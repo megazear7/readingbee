@@ -60,10 +60,6 @@ export class ReadingBeeSettings extends LitElement {
         border: 1px solid var(--color-panel-border);
       }
 
-      .back:hover {
-        color: var(--color-1);
-      }
-
       .body {
         width: min(640px, 100%);
         margin: 0 auto;
@@ -169,9 +165,16 @@ export class ReadingBeeSettings extends LitElement {
         flex-wrap: wrap;
       }
 
-      .remove-confirm {
-        font-size: 0.85rem;
+      .icon-delete {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 0.35rem;
+        flex: 0 0 auto;
+      }
+
+      .icon-delete:hover {
         color: var(--color-danger);
+        background: rgba(232, 93, 76, 0.14);
       }
 
       .data-actions {
@@ -245,8 +248,10 @@ export class ReadingBeeSettings extends LitElement {
   @state() private nextPasscode = "";
   @state() private wipeStep: "none" | "confirm" | "pin" = "none";
   @state() private pendingDeleteId: string | null = null;
+  @state() private pendingDeleteName = "";
   @state() private colorPickerProfileId: string | null = null;
-  @query("reading-bee-modal") private colorModal!: ReadingBeeModal;
+  @query(".color-modal") private colorModal!: ReadingBeeModal;
+  @query(".delete-modal") private deleteModal!: ReadingBeeModal;
 
   constructor() {
     super();
@@ -263,8 +268,11 @@ export class ReadingBeeSettings extends LitElement {
         <div class="body">
           <reading-bee-instructor-gate>${this.settingsView()}</reading-bee-instructor-gate>
         </div>
-        <reading-bee-modal @ModelClosing=${this.closeColorPicker}>
+        <reading-bee-modal class="color-modal" @ModelClosing=${this.closeColorPicker}>
           <div slot="body">${this.colorPickerBody()}</div>
+        </reading-bee-modal>
+        <reading-bee-modal class="delete-modal" @ModelClosing=${this.closeDelete}>
+          <div slot="body">${this.deleteBody()}</div>
         </reading-bee-modal>
       </div>
     `;
@@ -344,23 +352,9 @@ export class ReadingBeeSettings extends LitElement {
           </button>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level">Lv ${profile.level}</div>
-          ${
-            this.pendingDeleteId === profile.id
-              ? html`
-                  <span class="remove-confirm">
-                    <button class="danger-btn" @click=${() => this.removeProfile(profile.id)}>Delete</button>
-                    <button class="muted-btn" @click=${() => (this.pendingDeleteId = null)}>Cancel</button>
-                  </span>
-                `
-              : html`
-                  <button
-                    class="muted-btn"
-                    aria-label="Remove profile"
-                    @click=${() => (this.pendingDeleteId = profile.id)}>
-                    ${trashIcon}
-                  </button>
-                `
-          }
+          <button class="muted-btn icon-delete" aria-label="Remove profile" @click=${() => this.openDelete(profile.id)}>
+            ${trashIcon}
+          </button>
         </div>
       </div>
     `;
@@ -388,6 +382,22 @@ export class ReadingBeeSettings extends LitElement {
     `;
   }
 
+  private deleteBody(): TemplateResult {
+    if (!this.pendingDeleteName) {
+      return html``;
+    }
+    return html`
+      <div class="confirm">
+        <h2>Delete ${this.pendingDeleteName}?</h2>
+        <p>This will permanently remove this profile and their reading history. This cannot be undone.</p>
+        <div class="confirm-row">
+          <button class="ghost-btn" @click=${() => this.deleteModal.close()}>Cancel</button>
+          <button class="danger-btn" @click=${this.confirmDelete}>Delete profile</button>
+        </div>
+      </div>
+    `;
+  }
+
   private openColorPicker(profileId: string): void {
     this.colorPickerProfileId = profileId;
     void this.colorModal.open();
@@ -395,6 +405,25 @@ export class ReadingBeeSettings extends LitElement {
 
   private closeColorPicker = (): void => {
     this.colorPickerProfileId = null;
+  };
+
+  private openDelete(profileId: string): void {
+    const profile = appStore.state.profiles.find((item) => item.id === profileId);
+    if (!profile) return;
+    this.pendingDeleteId = profile.id;
+    this.pendingDeleteName = profile.name;
+    void this.deleteModal.open();
+  }
+
+  private closeDelete = (): void => {
+    this.pendingDeleteId = null;
+  };
+
+  private confirmDelete = async (): Promise<void> => {
+    const id = this.pendingDeleteId;
+    if (!id) return;
+    await this.deleteModal.close();
+    this.removeProfile(id);
   };
 
   private pickColor(profileId: string, index: number): void {

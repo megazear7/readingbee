@@ -155,6 +155,14 @@ try {
   if (profileName !== "Ava") {
     throw new Error(`Profile modal showed ${profileName}`);
   }
+  const statLabels = await withPage(
+    page,
+    readingProfile,
+    `return [...node.querySelectorAll(".stat span")].map((el) => el.textContent.trim()).join("|");`,
+  );
+  if (statLabels !== "Texts read|Right|Wrong|Skipped|Easy") {
+    throw new Error(`Profile stats were ${statLabels}`);
+  }
   await withPage(page, [...readingProfile, "reading-bee-modal", "shadow", "button.close-button"], "node.click();");
   await page.waitForFunction(() => document.body.style.overflow !== "hidden");
 
@@ -220,6 +228,24 @@ try {
     const pad = gate?.shadowRoot?.querySelector("reading-bee-passcode");
     const cards = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelectorAll(".profile-card");
     return !pad && (cards?.length ?? 0) >= 2;
+  });
+
+  await click(page, ["reading-bee-settings", "shadow", "button.icon-delete"]);
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".delete-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    return backdrop?.classList.contains("visible");
+  });
+  const deleteTitle = await textOf(page, ["reading-bee-settings", "shadow", ".delete-modal", "h2"]);
+  if (!deleteTitle.startsWith("Delete ")) {
+    throw new Error(`Delete modal showed ${deleteTitle}`);
+  }
+  await click(page, ["reading-bee-settings", "shadow", ".delete-modal", "button.ghost-btn"]);
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".delete-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    const closing = backdrop?.classList.contains("visible") || backdrop?.classList.contains("opening") || backdrop?.classList.contains("closing");
+    return !closing && document.body.style.overflow !== "hidden";
   });
 
   await click(page, ["reading-bee-settings", "shadow", "button.back"]);

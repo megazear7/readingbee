@@ -43,15 +43,59 @@ export class ReadingBeeReading extends LitElement {
       }
 
       .avatar {
+        position: relative;
+        z-index: 1;
         font-weight: 700;
         font-size: 1.05rem;
         line-height: 1;
         letter-spacing: 0;
+        isolation: isolate;
+        transition:
+          transform var(--time-normal) ease,
+          box-shadow var(--time-normal) ease,
+          filter var(--time-normal) ease;
+      }
+
+      .avatar::before {
+        content: "";
+        position: absolute;
+        inset: -7px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, transparent 0 58%, var(--color-1) 72%, #fff6d6 80%, transparent 92%);
+        opacity: 0;
+        z-index: -1;
+        filter: blur(0.3px);
+        pointer-events: none;
+        transition: opacity var(--time-normal) ease;
+        animation: avatarOrbit 1.5s linear infinite;
+        animation-play-state: paused;
+      }
+
+      .avatar:hover {
+        transform: scale(1.1);
+        filter: brightness(1.08);
+        box-shadow:
+          0 0 0 2px rgba(232, 184, 74, 0.4),
+          0 10px 26px rgba(232, 184, 74, 0.28);
+      }
+
+      .avatar:hover::before {
+        opacity: 1;
+        animation-play-state: running;
+      }
+
+      @keyframes avatarOrbit {
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .icon-btn {
         color: var(--color-primary-text-muted);
         opacity: 0.72;
+        transition:
+          opacity var(--time-normal) ease,
+          color var(--time-normal) ease;
       }
 
       .icon-btn:hover {
@@ -196,10 +240,61 @@ export class ReadingBeeReading extends LitElement {
         text-align: center;
         line-height: 1.2;
         white-space: nowrap;
+        transition:
+          opacity var(--time-normal) ease,
+          color var(--time-normal) ease;
       }
 
       .muted:hover {
         opacity: 0.9;
+      }
+
+      .ripple {
+        position: fixed;
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 8;
+        transform: translate(-50%, -50%) scale(0.72);
+        animation: scoreRipple 900ms ease-out forwards;
+      }
+
+      .ripple.yes {
+        background: radial-gradient(
+          circle,
+          rgba(125, 206, 130, 0.42) 0%,
+          rgba(125, 206, 130, 0.12) 42%,
+          transparent 70%
+        );
+        box-shadow: 0 0 0 3px rgba(125, 206, 130, 0.45);
+      }
+
+      .ripple.no {
+        background: radial-gradient(circle, rgba(232, 93, 76, 0.4) 0%, rgba(232, 93, 76, 0.12) 42%, transparent 70%);
+        box-shadow: 0 0 0 3px rgba(232, 93, 76, 0.45);
+      }
+
+      @keyframes scoreRipple {
+        0% {
+          opacity: 0.95;
+          transform: translate(-50%, -50%) scale(0.72);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(28);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ripple,
+        .avatar::before {
+          animation: none;
+        }
+
+        .avatar:hover::before {
+          opacity: 0;
+        }
       }
 
       .icon-btn svg {
@@ -210,7 +305,9 @@ export class ReadingBeeReading extends LitElement {
   ];
 
   @state() private outgoing: ReadingText | null = null;
+  @state() private ripples: { id: number; kind: "yes" | "no"; x: number; y: number }[] = [];
   private locked = false;
+  private rippleSeq = 0;
 
   constructor() {
     super();
@@ -261,16 +358,23 @@ export class ReadingBeeReading extends LitElement {
         </div>
         <footer>
           <div class="action">
-            <button class="score-btn yes" aria-label="Correct" @click=${() => this.record("right")}>
+            <button class="score-btn yes" aria-label="Correct" @click=${(event: Event) => this.record("right", event)}>
               ${checkIcon}
             </button>
             <button class="muted" @click=${() => this.record("wayTooEasy")}>Way too easy</button>
           </div>
           <div class="action">
-            <button class="score-btn no" aria-label="Incorrect" @click=${() => this.record("wrong")}>${xIcon}</button>
+            <button class="score-btn no" aria-label="Incorrect" @click=${(event: Event) => this.record("wrong", event)}>
+              ${xIcon}
+            </button>
             <button class="muted" @click=${() => this.record("skip")}>Skip</button>
           </div>
         </footer>
+        ${this.ripples.map(
+          (ripple) => html`
+            <span class="ripple ${ripple.kind}" style="left:${ripple.x}px;top:${ripple.y}px"></span>
+          `,
+        )}
       </div>
     `;
   }
@@ -279,10 +383,13 @@ export class ReadingBeeReading extends LitElement {
     navigate("settings");
   };
 
-  private record(result: ResultKind): void {
+  private record(result: ResultKind, event?: Event): void {
     if (this.locked) return;
     const current = appStore.currentText;
     if (!current) return;
+    if (result === "right" || result === "wrong") {
+      this.spawnRipple(result === "right" ? "yes" : "no", event);
+    }
     this.locked = true;
     this.outgoing = current;
     appStore.record(result);
@@ -290,6 +397,25 @@ export class ReadingBeeReading extends LitElement {
       this.outgoing = null;
       this.locked = false;
     }, 360);
+  }
+
+  private spawnRipple(kind: "yes" | "no", event?: Event): void {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const source =
+      event?.currentTarget instanceof HTMLElement
+        ? event.currentTarget
+        : this.renderRoot.querySelector(kind === "yes" ? ".score-btn.yes" : ".score-btn.no");
+    if (!(source instanceof HTMLElement)) {
+      return;
+    }
+    const rect = source.getBoundingClientRect();
+    const id = ++this.rippleSeq;
+    this.ripples = [...this.ripples, { id, kind, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }];
+    window.setTimeout(() => {
+      this.ripples = this.ripples.filter((ripple) => ripple.id !== id);
+    }, 900);
   }
 
   private onKey = (event: KeyboardEvent): void => {

@@ -58,10 +58,6 @@ export class ReadingBeeAddProfile extends LitElement {
         border: 1px solid var(--color-panel-border);
       }
 
-      .back:hover {
-        color: var(--color-1);
-      }
-
       .body {
         width: min(640px, 100%);
         margin: 0 auto;
