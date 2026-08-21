@@ -1,6 +1,7 @@
 import { colorPairAt, nextColorPairIndex } from "./colors.js";
 import {
   emptyTextStat,
+  LETTERS_MAX_LEVEL,
   MAX_LEVEL,
   MIN_LEVEL,
   Profile,
@@ -29,7 +30,7 @@ const LEGACY_STARTING_LEVEL: Record<Exclude<ReadingBand, "letters">, number> = {
 
 export const ALGORITHM = {
   retireCorrectCount: 3,
-  levelUpStreak: 5,
+  levelUpStreak: 50,
   levelDownStreak: 3,
   easyJump: 8,
   wrongCooldownMin: 2,
@@ -38,6 +39,8 @@ export const ALGORITHM = {
   correctWeight: 0.4,
   wrongWeight: 2.4,
 } as const;
+
+export const isLetterLevel = (level: number): boolean => level <= LETTERS_MAX_LEVEL;
 
 export type Rng = {
   random: () => number;
@@ -192,6 +195,20 @@ const isEligible = (profile: Profile, text: ReadingText): boolean => {
   return true;
 };
 
+const isLetterCycleEligible = (profile: Profile, text: ReadingText, relax: "strict" | "repeat"): boolean => {
+  const stat = getStat(profile, text.id);
+  if (stat.cooldown > 0) {
+    return false;
+  }
+  if (text.id === profile.lastTextId) {
+    return false;
+  }
+  if (relax === "strict" && profile.recentTextIds.includes(text.id)) {
+    return false;
+  }
+  return true;
+};
+
 export const textWeight = (stat: TextStat): number => {
   if (stat.retired) {
     return 0;
@@ -212,11 +229,68 @@ const weightedPick = (texts: ReadingText[], profile: Profile, rng: Rng): Reading
   return texts[texts.length - 1];
 };
 
-export const pickNext = (profile: Profile, corpus: ReadingText[], rng: Rng = defaultRng): ReadingText => {
-  if (corpus.length === 0) {
-    throw new Error("Reading Bee corpus is empty.");
+export const hasSeenText = (profile: Profile, textId: string): boolean => {
+  const stat = profile.textStats[textId];
+  if (!stat) {
+    return false;
+  }
+  return stat.correct + stat.wrong + stat.skip + stat.wayTooEasy > 0;
+};
+
+export const hasMasteredText = (profile: Profile, textId: string): boolean => {
+  const stat = profile.textStats[textId];
+  return Boolean(stat && (stat.correct > 0 || stat.wayTooEasy > 0));
+};
+
+export const levelCoverageComplete = (profile: Profile, corpus: ReadingText[], level: number): boolean => {
+  const texts = corpus.filter((text) => text.level === level);
+  if (texts.length === 0) {
+    return true;
+  }
+  return texts.every((text) => hasSeenText(profile, text.id) && hasMasteredText(profile, text.id));
+};
+
+const pickFrom = (
+  texts: ReadingText[],
+  profile: Profile,
+  rng: Rng,
+  eligible: (text: ReadingText) => boolean,
+): ReadingText | null => {
+  const pool = texts.filter(eligible);
+  if (pool.length === 0) {
+    return null;
+  }
+  return weightedPick(pool, profile, rng);
+};
+
+const pickLetterLevel = (profile: Profile, corpus: ReadingText[], rng: Rng): ReadingText => {
+  const target = workingLevel(profile);
+  const atLevel = corpus.filter((text) => text.level === target);
+  if (atLevel.length === 0) {
+    return pickOpenLevel(profile, corpus, rng);
   }
 
+  const unseen = atLevel.filter((text) => !hasSeenText(profile, text.id));
+  const unmastered = atLevel.filter((text) => !hasMasteredText(profile, text.id));
+  const groups = [unseen, unmastered, atLevel];
+
+  for (const group of groups) {
+    const strict = pickFrom(group, profile, rng, (text) => isLetterCycleEligible(profile, text, "strict"));
+    if (strict) {
+      return strict;
+    }
+    const relaxed = pickFrom(group, profile, rng, (text) => isLetterCycleEligible(profile, text, "repeat"));
+    if (relaxed) {
+      return relaxed;
+    }
+  }
+
+  const notLast = atLevel.filter((text) => text.id !== profile.lastTextId);
+  const fallback = notLast.length > 0 ? notLast : atLevel;
+  return fallback[rng.int(0, fallback.length - 1)];
+};
+
+const pickOpenLevel = (profile: Profile, corpus: ReadingText[], rng: Rng): ReadingText => {
   const target = workingLevel(profile);
   for (let radius = 0; radius <= MAX_LEVEL; radius += 1) {
     const pool = corpus.filter((text) => Math.abs(text.level - target) <= radius && isEligible(profile, text));
@@ -228,6 +302,16 @@ export const pickNext = (profile: Profile, corpus: ReadingText[], rng: Rng = def
   const notLast = corpus.filter((text) => text.id !== profile.lastTextId);
   const fallback = notLast.length > 0 ? notLast : corpus;
   return fallback[rng.int(0, fallback.length - 1)];
+};
+
+export const pickNext = (profile: Profile, corpus: ReadingText[], rng: Rng = defaultRng): ReadingText => {
+  if (corpus.length === 0) {
+    throw new Error("Reading Bee corpus is empty.");
+  }
+  if (isLetterLevel(workingLevel(profile))) {
+    return pickLetterLevel(profile, corpus, rng);
+  }
+  return pickOpenLevel(profile, corpus, rng);
 };
 
 export const ensureCurrentText = (profile: Profile, corpus: ReadingText[], rng: Rng = defaultRng): Profile => {
@@ -244,6 +328,7 @@ export const applyResult = (
   result: ResultKind,
   rng: Rng = defaultRng,
   at = new Date(),
+  corpus: ReadingText[] = [],
 ): Profile => {
   const event: ReadingEvent = {
     id: createId(),
@@ -274,6 +359,9 @@ export const applyResult = (
   if (result === "wayTooEasy") {
     stat.wayTooEasy += 1;
     stats = { ...stats, [text.id]: stat };
+    if (isLetterLevel(next.level) && !next.boostActive) {
+      return progressCorrect({ ...next, textStats: stats }, corpus);
+    }
     const jumped = clampLevel(Math.max(next.level, text.level) + ALGORITHM.easyJump);
     return {
       ...next,
@@ -291,19 +379,7 @@ export const applyResult = (
       stat.retired = true;
     }
     stats = { ...stats, [text.id]: stat };
-    const streak = next.correctStreak + 1;
-    const activeLevel = workingLevel(next);
-    const shouldLevelUp = streak >= ALGORITHM.levelUpStreak;
-    const level = shouldLevelUp ? clampLevel(activeLevel + 1) : next.level;
-    return {
-      ...next,
-      textStats: stats,
-      correctStreak: shouldLevelUp ? 0 : streak,
-      wrongStreak: 0,
-      level,
-      boostActive: shouldLevelUp ? false : next.boostActive,
-      boostLevel: shouldLevelUp ? level : next.boostLevel,
-    };
+    return progressCorrect({ ...next, textStats: stats }, corpus);
   }
 
   stat.wrong += 1;
@@ -322,6 +398,22 @@ export const applyResult = (
   };
 };
 
+const progressCorrect = (profile: Profile, corpus: ReadingText[]): Profile => {
+  const streak = profile.correctStreak + 1;
+  const activeLevel = workingLevel(profile);
+  const coverageOk = !isLetterLevel(activeLevel) || levelCoverageComplete(profile, corpus, activeLevel);
+  const shouldLevelUp = streak >= ALGORITHM.levelUpStreak && coverageOk;
+  const level = shouldLevelUp ? clampLevel(activeLevel + 1) : profile.level;
+  return {
+    ...profile,
+    correctStreak: shouldLevelUp ? 0 : streak,
+    wrongStreak: 0,
+    level,
+    boostActive: shouldLevelUp ? false : profile.boostActive,
+    boostLevel: shouldLevelUp ? level : profile.boostLevel,
+  };
+};
+
 export const recordAndPickNext = (
   profile: Profile,
   text: ReadingText,
@@ -330,7 +422,7 @@ export const recordAndPickNext = (
   rng: Rng = defaultRng,
   at = new Date(),
 ): Profile => {
-  const updated = applyResult(profile, text, result, rng, at);
+  const updated = applyResult(profile, text, result, rng, at, corpus);
   const nextText = pickNext(updated, corpus, rng);
   return { ...updated, currentTextId: nextText.id };
 };

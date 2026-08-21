@@ -1,6 +1,6 @@
-import { ReadingText } from "./type.app.js";
+import { LETTERS_MAX_LEVEL, ReadingText } from "./type.app.js";
 
-export const PICTURE_MAX_LEVEL = 10;
+export const PICTURE_MAX_LEVEL = LETTERS_MAX_LEVEL;
 
 export const LETTER_PICTURES: Record<string, string> = {
   a: "/apple.jpg",
