@@ -129,13 +129,14 @@ export class ReadingBeeSettings extends LitElement {
 
       .pairs {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 0.5rem;
         padding: 0.2rem 0 0.6rem;
       }
 
       .pair {
         width: 100%;
+        min-width: 0;
         aspect-ratio: 1;
         height: auto;
         border-radius: 50%;

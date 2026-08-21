@@ -115,12 +115,13 @@ export class ReadingBeeAddProfile extends LitElement {
 
       .pairs {
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
+        grid-template-columns: repeat(8, minmax(0, 1fr));
         gap: 0.5rem;
       }
 
       .pair {
         width: 100%;
+        min-width: 0;
         aspect-ratio: 1;
         height: auto;
         border-radius: 50%;
