@@ -4,8 +4,36 @@
     <title>Reading Bee</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta charset="UTF-8" />
-    <script type="module" src="/bundle.js"></script>
+    <link rel="preload" href="/fonts/nunito-400.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href="/fonts/nunito-700.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href="/fonts/lexend-500.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="stylesheet" type="text/css" href="/app.css" />
+    <style>
+      html:not(.fonts-ready) reading-bee-app {
+        visibility: hidden;
+      }
+    </style>
+    <script>
+      (function () {
+        var finished = false;
+        var done = function () {
+          if (finished) return;
+          finished = true;
+          document.documentElement.classList.add("fonts-ready");
+        };
+        setTimeout(done, 1500);
+        if (!document.fonts || !document.fonts.load) {
+          done();
+          return;
+        }
+        Promise.all([
+          document.fonts.load("400 16px Nunito"),
+          document.fonts.load("700 16px Nunito"),
+          document.fonts.load("500 16px Lexend"),
+        ]).then(done, done);
+      })();
+    </script>
+    <script type="module" src="/bundle.js"></script>
     <meta name="description" content="Reading Bee helps beginner readers learn to read." />
     <link rel="icon" type="image/png" href="/logo/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
