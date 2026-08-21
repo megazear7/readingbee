@@ -229,6 +229,27 @@ try {
     throw new Error(`Expected share buttons, found ${shareCount}`);
   }
 
+  await click(page, ["reading-bee-settings", "shadow", "button.icon-share"]);
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".share-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    return backdrop?.classList.contains("visible");
+  });
+  const shareTitle = await textOf(page, ["reading-bee-settings", "shadow", ".share-modal", "h2"]);
+  if (!shareTitle.startsWith("Share ")) {
+    throw new Error(`Share modal showed ${shareTitle}`);
+  }
+  await click(page, ["reading-bee-settings", "shadow", ".share-modal", "button.ghost-btn"]);
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".share-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    const closing =
+      backdrop?.classList.contains("visible") ||
+      backdrop?.classList.contains("opening") ||
+      backdrop?.classList.contains("closing");
+    return !closing && document.body.style.overflow !== "hidden";
+  });
+
   await click(page, ["reading-bee-settings", "shadow", "button.icon-delete"]);
   await page.waitForFunction(() => {
     const modal = document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector(".delete-modal");

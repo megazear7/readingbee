@@ -25,10 +25,14 @@ export class ReadingBeeSettings extends LitElement {
       :host {
         display: block;
         min-height: 100%;
+        max-width: 100%;
+        overflow-x: clip;
       }
 
       .page {
         min-height: 100dvh;
+        min-width: 0;
+        max-width: 100%;
         display: grid;
         grid-template-rows: auto 1fr;
       }
@@ -64,6 +68,8 @@ export class ReadingBeeSettings extends LitElement {
 
       .body {
         width: min(640px, 100%);
+        min-width: 0;
+        max-width: 100%;
         margin: 0 auto;
         padding: 1.2rem 1.2rem calc(2rem + env(safe-area-inset-bottom));
       }
@@ -75,6 +81,7 @@ export class ReadingBeeSettings extends LitElement {
       .stack {
         display: grid;
         gap: 0.8rem;
+        min-width: 0;
       }
 
       .profile-card {
@@ -84,12 +91,14 @@ export class ReadingBeeSettings extends LitElement {
         padding: 0.9rem;
         display: grid;
         gap: 0.7rem;
+        min-width: 0;
       }
 
       .profile-top {
         display: flex;
         align-items: center;
         gap: 0.7rem;
+        min-width: 0;
       }
 
       .swatch {
@@ -112,6 +121,7 @@ export class ReadingBeeSettings extends LitElement {
 
       .grow {
         flex: 1;
+        min-width: 0;
       }
 
       .level {
@@ -202,6 +212,7 @@ export class ReadingBeeSettings extends LitElement {
       .data-actions {
         display: flex;
         width: 100%;
+        min-width: 0;
       }
 
       .data-actions .ghost-btn {
@@ -209,6 +220,9 @@ export class ReadingBeeSettings extends LitElement {
         border-radius: 0;
         min-width: 0;
         position: relative;
+        overflow: hidden;
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
       }
 
       .data-actions .ghost-btn + .ghost-btn {
@@ -272,8 +286,11 @@ export class ReadingBeeSettings extends LitElement {
   @state() private pendingDeleteId: string | null = null;
   @state() private pendingDeleteName = "";
   @state() private colorPickerProfileId: string | null = null;
+  @state() private shareProfileId: string | null = null;
+  @state() private shareProfileName = "";
   @query(".color-modal") private colorModal!: ReadingBeeModal;
   @query(".delete-modal") private deleteModal!: ReadingBeeModal;
+  @query(".share-modal") private shareModal!: ReadingBeeModal;
 
   constructor() {
     super();
@@ -295,6 +312,9 @@ export class ReadingBeeSettings extends LitElement {
         </reading-bee-modal>
         <reading-bee-modal class="delete-modal" @ModelClosing=${this.closeDelete}>
           <div slot="body">${this.deleteBody()}</div>
+        </reading-bee-modal>
+        <reading-bee-modal class="share-modal" @ModelClosing=${this.closeShare}>
+          <div slot="body">${this.shareBody()}</div>
         </reading-bee-modal>
       </div>
     `;
@@ -374,7 +394,7 @@ export class ReadingBeeSettings extends LitElement {
           </button>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level">Lv ${profile.level}</div>
-          <button class="muted-btn icon-share" aria-label="Share profile" @click=${() => this.shareProfile(profile)}>
+          <button class="muted-btn icon-share" aria-label="Share profile" @click=${() => this.openShare(profile.id)}>
             ${shareIcon}
           </button>
           <button class="muted-btn icon-delete" aria-label="Remove profile" @click=${() => this.openDelete(profile.id)}>
@@ -403,6 +423,30 @@ export class ReadingBeeSettings extends LitElement {
               @click=${() => this.pickColor(profile.id, index)}></button>
           `,
         )}
+      </div>
+    `;
+  }
+
+  private shareBody(): TemplateResult {
+    const profile = appStore.state.profiles.find((item) => item.id === this.shareProfileId);
+    const name = profile?.name ?? this.shareProfileName;
+    if (!name) {
+      return html``;
+    }
+    const nativeShare = shouldNativeShare();
+    return html`
+      <div class="confirm">
+        <h2>Share ${name}</h2>
+        <p>
+          Send a link to a parent, teacher, or another device. When they open it, Reading Bee will ask if they want to
+          add ${name}'s profile and reading history.
+        </p>
+        <div class="confirm-row">
+          <button class="ghost-btn" @click=${() => this.shareModal.close()}>Cancel</button>
+          <button class="primary-btn" @click=${() => profile && this.confirmShare(profile)}>
+            ${nativeShare ? "Share link" : "Copy link"}
+          </button>
+        </div>
       </div>
     `;
   }
@@ -517,7 +561,19 @@ export class ReadingBeeSettings extends LitElement {
     appStore.renameProfile(id, (event.target as HTMLInputElement).value);
   }
 
-  private shareProfile = async (profile: Profile): Promise<void> => {
+  private openShare(profileId: string): void {
+    const profile = appStore.state.profiles.find((item) => item.id === profileId);
+    if (!profile) return;
+    this.shareProfileId = profile.id;
+    this.shareProfileName = profile.name;
+    void this.shareModal.open();
+  }
+
+  private closeShare = (): void => {
+    this.shareProfileId = null;
+  };
+
+  private confirmShare = async (profile: Profile): Promise<void> => {
     const url = profileShareUrl(profile);
     try {
       if (shouldNativeShare()) {
@@ -526,9 +582,11 @@ export class ReadingBeeSettings extends LitElement {
           text: `Add ${profile.name}'s Reading Bee profile`,
           url,
         });
+        await this.shareModal.close();
         return;
       }
       await navigator.clipboard.writeText(url);
+      await this.shareModal.close();
       dispatch(this, SuccessEvent("Link copied"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
