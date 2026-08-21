@@ -138,9 +138,9 @@ try {
   await sleep(250);
   await click(page, ["reading-bee-reading", "shadow", "button.score-btn.no"]);
   await sleep(250);
-  await click(page, ["reading-bee-reading", "shadow", ".muted-row button:first-child"]);
+  await click(page, ["reading-bee-reading", "shadow", ".action:last-child .muted"]);
   await sleep(250);
-  await click(page, ["reading-bee-reading", "shadow", ".muted-row button:last-child"]);
+  await click(page, ["reading-bee-reading", "shadow", ".action:first-child .muted"]);
   await sleep(250);
 
   await click(page, ["reading-bee-reading", "shadow", "button.avatar"]);

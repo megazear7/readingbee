@@ -130,14 +130,16 @@ export class ReadingBeeReading extends LitElement {
       }
 
       footer {
-        display: grid;
-        gap: 1rem;
-        justify-items: center;
+        display: flex;
+        justify-content: center;
+        gap: 1.4rem;
       }
 
-      .score {
-        display: flex;
-        gap: 1.4rem;
+      .action {
+        display: grid;
+        justify-items: center;
+        gap: 0.85rem;
+        min-width: 88px;
       }
 
       .score-btn {
@@ -178,19 +180,17 @@ export class ReadingBeeReading extends LitElement {
         height: 36px;
       }
 
-      .muted-row {
-        display: flex;
-        gap: 1.4rem;
-      }
-
-      .muted-row button {
+      .muted {
         color: var(--color-primary-text-muted);
         opacity: 0.55;
         font-size: 0.92rem;
         letter-spacing: 0.02em;
+        text-align: center;
+        line-height: 1.2;
+        white-space: nowrap;
       }
 
-      .muted-row button:hover {
+      .muted:hover {
         opacity: 0.9;
       }
 
@@ -250,15 +250,15 @@ export class ReadingBeeReading extends LitElement {
           }
         </div>
         <footer>
-          <div class="score">
+          <div class="action">
             <button class="score-btn yes" aria-label="Correct" @click=${() => this.record("right")}>
               ${checkIcon}
             </button>
-            <button class="score-btn no" aria-label="Incorrect" @click=${() => this.record("wrong")}>${xIcon}</button>
+            <button class="muted" @click=${() => this.record("wayTooEasy")}>Way too easy</button>
           </div>
-          <div class="muted-row">
-            <button @click=${() => this.record("skip")}>Skip</button>
-            <button @click=${() => this.record("wayTooEasy")}>Way too easy</button>
+          <div class="action">
+            <button class="score-btn no" aria-label="Incorrect" @click=${() => this.record("wrong")}>${xIcon}</button>
+            <button class="muted" @click=${() => this.record("skip")}>Skip</button>
           </div>
         </footer>
       </div>
