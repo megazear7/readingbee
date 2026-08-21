@@ -88,12 +88,14 @@ export class ReadingBeeAddProfile extends LitElement {
       .band {
         width: 100%;
         text-align: left;
-        padding: 1rem 1.1rem;
+        padding: 0.85rem 1.1rem;
         border-radius: 18px;
         background: #1a1713;
         border: 1px solid var(--color-panel-border);
-        display: grid;
-        gap: 0.15rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
       }
 
       .band[active] {
@@ -108,11 +110,12 @@ export class ReadingBeeAddProfile extends LitElement {
       .band span {
         color: var(--color-primary-text-muted);
         font-size: 0.92rem;
+        text-align: right;
       }
 
       .pairs {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(8, 1fr);
         gap: 0.5rem;
       }
 
