@@ -212,8 +212,8 @@ export class ReadingBeeSettings extends LitElement {
       .sample .picture {
         width: 88px;
         height: 88px;
-        object-fit: cover;
-        border-radius: 18px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
       }
 
       .sample[data-kind="letter"] {

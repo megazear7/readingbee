@@ -1,23 +1,32 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { pictureFor } from "./letter-pictures.js";
+import { LETTER_PICTURES, pictureFor } from "./letter-pictures.js";
 import { ReadingText } from "./type.app.js";
 
-const letterA: ReadingText = { id: "l001-000", text: "a", level: 1, kind: "letter" };
-const letterQu: ReadingText = { id: "l003-006", text: "qu", level: 3, kind: "letter" };
-const wordA: ReadingText = { id: "l011-007", text: "a", level: 11, kind: "word" };
+const letter = (text: string, level = 1): ReadingText => ({
+  id: `l-${text}`,
+  text,
+  level,
+  kind: "letter",
+});
 
 describe("pictureFor", () => {
-  it("shows the apple for the letter a on early levels", () => {
-    assert.equal(pictureFor(letterA), "/apple.jpg");
+  it("has a picture for every single letter", () => {
+    const alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for (const glyph of alphabet) {
+      assert.equal(glyph in LETTER_PICTURES, true, glyph);
+      assert.equal(pictureFor(letter(glyph)), LETTER_PICTURES[glyph]);
+    }
+    assert.equal(Object.keys(LETTER_PICTURES).length, 26);
   });
 
-  it("does not invent pictures for letters that do not have one yet", () => {
-    assert.equal(pictureFor(letterQu), undefined);
+  it("does not invent pictures for letter pairs", () => {
+    assert.equal(pictureFor(letter("qu", 3)), undefined);
+    assert.equal(pictureFor(letter("sh", 4)), undefined);
   });
 
   it("hides pictures once the text is past the letter levels", () => {
-    assert.equal(pictureFor(wordA), undefined);
-    assert.equal(pictureFor({ ...letterA, level: 11 }), undefined);
+    assert.equal(pictureFor({ id: "w", text: "a", level: 11, kind: "word" }), undefined);
+    assert.equal(pictureFor(letter("a", 11)), undefined);
   });
 });
