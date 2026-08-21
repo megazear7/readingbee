@@ -1,5 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { avatarStyle, profileInitial } from "../shared/colors.js";
 import { ReadingText, ResultKind } from "../shared/type.app.js";
 import { StoreController } from "./controller.store.js";
 import { checkIcon, gearIcon, xIcon } from "./icons.js";
@@ -39,6 +40,13 @@ export class ReadingBeeReading extends LitElement {
         border-radius: 50%;
         display: grid;
         place-items: center;
+      }
+
+      .avatar {
+        font-weight: 700;
+        font-size: 1.05rem;
+        line-height: 1;
+        letter-spacing: 0;
       }
 
       .icon-btn {
@@ -236,7 +244,9 @@ export class ReadingBeeReading extends LitElement {
               slot="open-button"
               class="avatar"
               aria-label="Profile"
-              style="background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);"></button>
+              style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
+              ${profileInitial(profile.name)}
+            </button>
           </reading-bee-profile-modal>
         </header>
         <div class="stage">

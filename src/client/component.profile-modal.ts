@@ -1,6 +1,7 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { profileStats } from "../shared/algorithm.js";
+import { avatarStyle, profileInitial } from "../shared/colors.js";
 import { Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
@@ -30,6 +31,11 @@ export class ReadingBeeProfileModal extends LitElement {
         height: 72px;
         border-radius: 50%;
         box-shadow: var(--shadow-normal);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 1.85rem;
+        line-height: 1;
       }
 
       .level {
@@ -102,6 +108,11 @@ export class ReadingBeeProfileModal extends LitElement {
         height: 28px;
         border-radius: 50%;
         flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 0.72rem;
+        line-height: 1;
       }
 
       .meta {
@@ -138,7 +149,9 @@ export class ReadingBeeProfileModal extends LitElement {
               ? this.passcodeView()
               : html`
                   <div class="hero">
-                    <div class="avatar" style=${this.avatarStyle(profile)}></div>
+                    <div class="avatar" style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
+                      ${profileInitial(profile.name)}
+                    </div>
                     <h2>${profile.name}</h2>
                     <div class="level">Level ${profile.level}</div>
                     <div class="bar"><span style="width:${progress}"></span></div>
@@ -166,7 +179,9 @@ export class ReadingBeeProfileModal extends LitElement {
                     ${appStore.state.profiles.map(
                       (item) => html`
                         <button class="row" ?current=${item.id === profile.id} @click=${() => this.requestSwitch(item)}>
-                          <div class="mini" style=${this.avatarStyle(item)}></div>
+                          <div class="mini" style=${avatarStyle(item.primaryColor, item.secondaryColor)}>
+                            ${profileInitial(item.name)}
+                          </div>
                           <div class="meta">
                             <strong>${item.name}</strong>
                             <small>Level ${item.level}</small>
@@ -184,10 +199,6 @@ export class ReadingBeeProfileModal extends LitElement {
 
   open(): void {
     void this.modal.open();
-  }
-
-  private avatarStyle(profile: Profile): string {
-    return `background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);`;
   }
 
   private passcodeView(): TemplateResult {

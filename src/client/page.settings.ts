@@ -1,6 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { COLOR_PAIRS } from "../shared/colors.js";
+import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
 import { Profile, ReadingBand } from "../shared/type.app.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
@@ -109,6 +109,11 @@ export class ReadingBeeSettings extends LitElement {
         height: 36px;
         border-radius: 50%;
         flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        line-height: 1;
       }
 
       .grow {
@@ -280,9 +285,9 @@ export class ReadingBeeSettings extends LitElement {
     return html`
       <div class="profile-card">
         <div class="profile-top">
-          <div
-            class="swatch"
-            style="background: linear-gradient(135deg, ${profile.primaryColor} 0 50%, ${profile.secondaryColor} 50% 100%);"></div>
+          <div class="swatch" style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
+            ${profileInitial(profile.name)}
+          </div>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
           <div class="level">Lv ${profile.level}</div>
           ${

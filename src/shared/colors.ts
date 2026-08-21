@@ -40,3 +40,56 @@ export const colorPairAt = (index: number): ColorPair => {
   const safe = ((index % COLOR_PAIRS.length) + COLOR_PAIRS.length) % COLOR_PAIRS.length;
   return COLOR_PAIRS[safe] ?? COLOR_PAIRS[0];
 };
+
+const LIGHT_TEXT = "#F4EAD5";
+const DARK_TEXT = "#1A1408";
+
+const parseHex = (hex: string): [number, number, number] => {
+  const value = hex.replace("#", "").trim();
+  const full =
+    value.length === 3
+      ? value
+          .split("")
+          .map((part) => part + part)
+          .join("")
+      : value;
+  return [
+    Number.parseInt(full.slice(0, 2), 16),
+    Number.parseInt(full.slice(2, 4), 16),
+    Number.parseInt(full.slice(4, 6), 16),
+  ];
+};
+
+const channel = (value: number): number => {
+  const scaled = value / 255;
+  return scaled <= 0.03928 ? scaled / 12.92 : Math.pow((scaled + 0.055) / 1.055, 2.4);
+};
+
+const luminance = (hex: string): number => {
+  const [red, green, blue] = parseHex(hex);
+  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
+};
+
+const contrastRatio = (first: string, second: string): number => {
+  const a = luminance(first);
+  const b = luminance(second);
+  const lighter = Math.max(a, b);
+  const darker = Math.min(a, b);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+export const readableTextColor = (primary: string, secondary: string): string => {
+  const minLight = Math.min(contrastRatio(LIGHT_TEXT, primary), contrastRatio(LIGHT_TEXT, secondary));
+  const minDark = Math.min(contrastRatio(DARK_TEXT, primary), contrastRatio(DARK_TEXT, secondary));
+  return minLight >= minDark ? LIGHT_TEXT : DARK_TEXT;
+};
+
+export const profileInitial = (name: string): string => {
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  return trimmed.charAt(0).toLocaleUpperCase();
+};
+
+export const avatarStyle = (primary: string, secondary: string): string => {
+  return `background: linear-gradient(135deg, ${primary} 0 50%, ${secondary} 50% 100%); color: ${readableTextColor(primary, secondary)};`;
+};
