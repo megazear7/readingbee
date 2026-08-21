@@ -129,11 +129,25 @@ export class ReadingBeeAddProfile extends LitElement {
         aspect-ratio: 1;
         height: auto;
         border-radius: 50%;
-        border: 3px solid transparent;
+        box-shadow: 0 0 0 3px transparent;
+        transition:
+          box-shadow var(--time-normal) ease,
+          transform var(--time-normal) ease;
+      }
+
+      .pair:hover {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 3px var(--color-1);
       }
 
       .pair[selected] {
-        border-color: #fff;
+        box-shadow: 0 0 0 3px #fff;
+      }
+
+      .pair[selected]:hover {
+        box-shadow:
+          0 0 0 3px #fff,
+          0 0 0 6px rgba(232, 184, 74, 0.45);
       }
 
       .primary-btn {
