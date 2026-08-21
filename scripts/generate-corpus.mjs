@@ -2,6 +2,19 @@ import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const letters = {
+  1: ["a", "t", "s", "i", "p", "n", "m", "d", "g", "o"],
+  2: ["c", "k", "e", "u", "r", "h", "b", "f", "l", "j"],
+  3: ["v", "w", "x", "y", "z", "q", "qu", "ck", "ff", "ll"],
+  4: ["sh", "ch", "th", "wh", "ph", "ng", "nk", "ss", "zz", "tch"],
+  5: ["bl", "cl", "fl", "gl", "pl", "sl", "sc", "sk", "sm", "sn"],
+  6: ["br", "cr", "dr", "fr", "gr", "pr", "tr", "tw", "sw", "st"],
+  7: ["sp", "str", "spr", "spl", "scr", "shr", "thr", "squ", "nd", "nt"],
+  8: ["ai", "ay", "ee", "ea", "oa", "ow", "oe", "ie", "igh", "ue"],
+  9: ["ew", "oo", "ou", "oi", "oy", "au", "aw", "ui", "ey", "eigh"],
+  10: ["ar", "or", "er", "ir", "ur", "air", "ear", "ore", "ure", "oor"],
+};
+
 const words = {
   1: ["cat", "hat", "sat", "mat", "bat", "rat", "pat", "a", "I", "at"],
   2: ["dog", "hog", "log", "fog", "mom", "pop", "hop", "top", "mop", "pot"],
@@ -121,6 +134,16 @@ const bookAt = (n) => {
   return templates[place.next % templates.length];
 };
 
+const remapRange = (level, oldMin, oldMax, newMin, newMax) =>
+  Math.round(newMin + ((level - oldMin) * (newMax - newMin)) / (oldMax - oldMin));
+
+const remapOldLevel = (level) => {
+  if (level <= 20) return remapRange(level, 1, 20, 11, 28);
+  if (level <= 40) return remapRange(level, 21, 40, 29, 46);
+  if (level <= 70) return remapRange(level, 41, 70, 47, 73);
+  return remapRange(level, 71, 100, 74, 100);
+};
+
 const fillLevel = (level, kind, makeText, start, count = 12) => {
   let n = start;
   let added = 0;
@@ -140,7 +163,7 @@ const used = new Set();
 
 const add = (level, kind, text) => {
   const clean = text.trim().replace(/\s+/g, " ");
-  const key = clean.toLowerCase();
+  const key = `${level}:${clean.toLowerCase()}`;
   if (!clean || used.has(key)) return;
   used.add(key);
   const n = String(level).padStart(3, "0");
@@ -148,22 +171,26 @@ const add = (level, kind, text) => {
   items.push({ id: `l${n}-${i}`, text: clean, level, kind });
 };
 
+for (let level = 1; level <= 10; level += 1) {
+  for (const item of letters[level] ?? []) add(level, "letter", item);
+}
+
 for (let level = 1; level <= 20; level += 1) {
-  for (const word of words[level] ?? []) add(level, "word", word);
+  for (const word of words[level] ?? []) add(remapOldLevel(level), "word", word);
 }
 
 for (let level = 21; level <= 40; level += 1) {
-  for (const phrase of phraseSets[level] ?? []) add(level, "phrase", phrase);
+  for (const phrase of phraseSets[level] ?? []) add(remapOldLevel(level), "phrase", phrase);
 }
 
 let sentenceN = 0;
 for (let level = 41; level <= 70; level += 1) {
-  sentenceN = fillLevel(level, "sentence", sentenceAt, sentenceN);
+  sentenceN = fillLevel(remapOldLevel(level), "sentence", sentenceAt, sentenceN);
 }
 
 let bookN = 0;
 for (let level = 71; level <= 100; level += 1) {
-  bookN = fillLevel(level, "book", bookAt, bookN);
+  bookN = fillLevel(remapOldLevel(level), "book", bookAt, bookN);
 }
 
 const missing = [];
@@ -178,11 +205,13 @@ if (missing.length > 0) {
 
 const file = `import { ReadingText } from "./type.app.js";
 
-export const corpus: ReadingText[] = ${JSON.stringify(items, null, 2)};
+export const corpus = ${JSON.stringify(items, null, 2)} as unknown as ReadingText[];
 
 export const corpusById: Record<string, ReadingText> = Object.fromEntries(corpus.map((item) => [item.id, item]));
 
 export const textsAtLevel = (level: number): ReadingText[] => corpus.filter((item) => item.level === level);
+
+export const sampleTextAtLevel = (level: number): ReadingText | undefined => textsAtLevel(level)[0];
 `;
 
 const out = resolve(dirname(fileURLToPath(import.meta.url)), "../src/shared/corpus.ts");

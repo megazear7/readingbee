@@ -1,15 +1,15 @@
 import z from "zod";
 
 export const STORAGE_KEY = "reading-bee:v1";
-export const APP_VERSION = 1;
+export const APP_VERSION = 2;
 export const MIN_LEVEL = 1;
 export const MAX_LEVEL = 100;
 export const PASSCODE_LENGTH = 4;
 
-export const ReadingBand = z.enum(["words", "phrases", "sentences", "books"]);
+export const ReadingBand = z.enum(["letters", "words", "phrases", "sentences", "books"]);
 export type ReadingBand = z.infer<typeof ReadingBand>;
 
-export const ReadingKind = z.enum(["word", "phrase", "sentence", "book"]);
+export const ReadingKind = z.enum(["letter", "word", "phrase", "sentence", "book"]);
 export type ReadingKind = z.infer<typeof ReadingKind>;
 
 export const ResultKind = z.enum(["right", "wrong", "skip", "wayTooEasy"]);

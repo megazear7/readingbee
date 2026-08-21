@@ -245,7 +245,7 @@ export class ReadingBeeAddProfile extends LitElement {
       dispatch(this, WarningEvent("Enter a name"));
       return;
     }
-    appStore.addProfile(this.name, this.band ?? "words", this.colorPairIndex);
+    appStore.addProfile(this.name, this.band ?? "letters", this.colorPairIndex);
     dispatch(this, SuccessEvent("Profile added"));
     navigate("settings");
   };

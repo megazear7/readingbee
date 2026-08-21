@@ -1,8 +1,9 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
+import { sampleTextAtLevel } from "../shared/corpus.js";
 import { profileShareUrl, shouldNativeShare } from "../shared/profile-share.js";
-import { Profile } from "../shared/type.app.js";
+import { MAX_LEVEL, MIN_LEVEL, Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
@@ -128,6 +129,101 @@ export class ReadingBeeSettings extends LitElement {
         color: var(--color-1);
         font-size: 0.88rem;
         font-weight: 700;
+        padding: 0.35rem 0.7rem;
+        min-height: 36px;
+        border-radius: 999px;
+        border: 1px solid rgba(232, 184, 74, 0.35);
+        background: rgba(232, 184, 74, 0.1);
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      .level:hover {
+        background: rgba(232, 184, 74, 0.2);
+        border-color: var(--color-1);
+      }
+
+      .level-form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .level-controls {
+        display: grid;
+        grid-template-columns: 1fr 5.5rem;
+        gap: 0.7rem;
+        align-items: center;
+      }
+
+      input[type="range"] {
+        appearance: none;
+        height: 8px;
+        padding: 0;
+        border-radius: 999px;
+        background: #221e18;
+        border: 1px solid var(--color-panel-border);
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--color-1);
+        box-shadow: 0 0 0 3px rgba(232, 184, 74, 0.2);
+        cursor: pointer;
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--color-1);
+        cursor: pointer;
+      }
+
+      input[type="number"] {
+        text-align: center;
+        font-weight: 700;
+        padding: 0.7rem 0.4rem;
+      }
+
+      .sample {
+        min-height: 5.5rem;
+        border-radius: 18px;
+        background: #120f0c;
+        border: 1px solid var(--color-panel-border);
+        display: grid;
+        place-items: center;
+        padding: 1.1rem 1rem;
+        text-align: center;
+        font-family: var(--font-reading);
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .sample[data-kind="letter"] {
+        font-size: 2.6rem;
+      }
+
+      .sample[data-kind="word"] {
+        font-size: 2rem;
+      }
+
+      .sample[data-kind="phrase"] {
+        font-size: 1.45rem;
+      }
+
+      .sample[data-kind="sentence"],
+      .sample[data-kind="book"] {
+        font-size: 1.15rem;
+      }
+
+      .sample-label {
+        margin: 0;
+        font-size: 0.88rem;
+        color: var(--color-primary-text-muted);
       }
 
       .pairs {
@@ -288,9 +384,12 @@ export class ReadingBeeSettings extends LitElement {
   @state() private colorPickerProfileId: string | null = null;
   @state() private shareProfileId: string | null = null;
   @state() private shareProfileName = "";
+  @state() private levelProfileId: string | null = null;
+  @state() private draftLevel = 1;
   @query(".color-modal") private colorModal!: ReadingBeeModal;
   @query(".delete-modal") private deleteModal!: ReadingBeeModal;
   @query(".share-modal") private shareModal!: ReadingBeeModal;
+  @query(".level-modal") private levelModal!: ReadingBeeModal;
 
   constructor() {
     super();
@@ -315,6 +414,9 @@ export class ReadingBeeSettings extends LitElement {
         </reading-bee-modal>
         <reading-bee-modal class="share-modal" @ModelClosing=${this.closeShare}>
           <div slot="body">${this.shareBody()}</div>
+        </reading-bee-modal>
+        <reading-bee-modal class="level-modal" @ModelClosing=${this.closeLevel}>
+          <div slot="body">${this.levelBody()}</div>
         </reading-bee-modal>
       </div>
     `;
@@ -393,7 +495,11 @@ export class ReadingBeeSettings extends LitElement {
             ${profileInitial(profile.name)}
           </button>
           <input class="grow" .value=${profile.name} @change=${(event: Event) => this.rename(profile.id, event)} />
-          <div class="level">Lv ${profile.level}</div>
+          <div class="level-wrap">
+            <button class="level" aria-label="Set exact level" @click=${() => this.openLevel(profile.id)}>
+              Lv ${profile.level}
+            </button>
+          </div>
           <button class="muted-btn icon-share" aria-label="Share profile" @click=${() => this.openShare(profile.id)}>
             ${shareIcon}
           </button>
@@ -423,6 +529,42 @@ export class ReadingBeeSettings extends LitElement {
               @click=${() => this.pickColor(profile.id, index)}></button>
           `,
         )}
+      </div>
+    `;
+  }
+
+  private levelBody(): TemplateResult {
+    const profile = appStore.state.profiles.find((item) => item.id === this.levelProfileId);
+    if (!profile) {
+      return html``;
+    }
+    const sample = sampleTextAtLevel(this.draftLevel);
+    return html`
+      <div class="level-form">
+        <h2 class="picker-title">Set exact level</h2>
+        <p>Choose a level from ${MIN_LEVEL} to ${MAX_LEVEL} for ${profile.name}.</p>
+        <div class="level-controls">
+          <input
+            type="range"
+            min=${MIN_LEVEL}
+            max=${MAX_LEVEL}
+            .value=${String(this.draftLevel)}
+            aria-label="Level slider"
+            @input=${this.onDraftLevel} />
+          <input
+            type="number"
+            min=${MIN_LEVEL}
+            max=${MAX_LEVEL}
+            .value=${String(this.draftLevel)}
+            aria-label="Level number"
+            @input=${this.onDraftLevel} />
+        </div>
+        <p class="sample-label">Sample at level ${this.draftLevel}</p>
+        <div class="sample" data-kind=${sample?.kind ?? "word"}>${sample?.text ?? ""}</div>
+        <div class="confirm-row">
+          <button class="ghost-btn" @click=${() => this.levelModal.close()}>Cancel</button>
+          <button class="primary-btn" @click=${this.saveLevel}>Save level</button>
+        </div>
       </div>
     `;
   }
@@ -474,6 +616,32 @@ export class ReadingBeeSettings extends LitElement {
 
   private closeColorPicker = (): void => {
     this.colorPickerProfileId = null;
+  };
+
+  private openLevel(profileId: string): void {
+    const profile = appStore.state.profiles.find((item) => item.id === profileId);
+    if (!profile) return;
+    this.levelProfileId = profile.id;
+    this.draftLevel = profile.level;
+    void this.levelModal.open();
+  }
+
+  private closeLevel = (): void => {
+    this.levelProfileId = null;
+  };
+
+  private onDraftLevel = (event: Event): void => {
+    const raw = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(raw)) return;
+    this.draftLevel = Math.min(MAX_LEVEL, Math.max(MIN_LEVEL, Math.round(raw)));
+  };
+
+  private saveLevel = async (): Promise<void> => {
+    const id = this.levelProfileId;
+    if (!id) return;
+    appStore.setProfileLevel(id, this.draftLevel);
+    await this.levelModal.close();
+    dispatch(this, SuccessEvent("Level updated"));
   };
 
   private openDelete(profileId: string): void {

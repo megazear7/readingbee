@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { STARTING_LEVEL } from "../shared/algorithm.js";
 import { memoryStorage, parseAppDataJson } from "../shared/storage.js";
+import { APP_VERSION, STORAGE_KEY } from "../shared/type.app.js";
 import { AppStore } from "./store.js";
 
 describe("AppStore", () => {
@@ -83,5 +84,52 @@ describe("AppStore", () => {
     assert.equal(target.state.profiles.length, 2);
     assert.equal(target.state.profiles[0]?.name, "Ava");
     assert.equal(target.verifyPasscode("1357"), true);
+  });
+
+  it("sets an exact profile level and picks a matching prompt", () => {
+    const store = new AppStore(memoryStorage());
+    store.createFirstProfile("Ava", "words");
+    const id = store.currentProfile!.id;
+    store.setProfileLevel(id, 4);
+    assert.equal(store.currentProfile?.level, 4);
+    assert.equal(store.currentProfile?.boostActive, false);
+    assert.equal(store.currentText?.level, 4);
+  });
+
+  it("migrates v1 word levels onto the squeezed 11-100 scale", () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        passcode: null,
+        currentProfileId: "p1",
+        profiles: [
+          {
+            id: "p1",
+            name: "Ava",
+            colorPairIndex: 0,
+            primaryColor: "#5BA4E8",
+            secondaryColor: "#CDE6F7",
+            band: "words",
+            level: 1,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            currentTextId: "old",
+            lastTextId: "old",
+            recentTextIds: ["old"],
+            boostActive: false,
+            boostLevel: 1,
+            correctStreak: 0,
+            wrongStreak: 0,
+            textStats: {},
+            events: [],
+          },
+        ],
+      }),
+    );
+    const store = new AppStore(storage);
+    assert.equal(store.currentProfile?.level, STARTING_LEVEL.words);
+    assert.equal(store.state.version, APP_VERSION);
+    assert.notEqual(store.currentProfile?.currentTextId, "old");
   });
 });

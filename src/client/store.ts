@@ -1,4 +1,11 @@
-import { applyColorPair, createProfile, ensureCurrentText, recordAndPickNext } from "../shared/algorithm.js";
+import {
+  applyColorPair,
+  createProfile,
+  ensureCurrentText,
+  normalizeImportedProfile,
+  recordAndPickNext,
+  setExactLevel,
+} from "../shared/algorithm.js";
 import { corpus, corpusById } from "../shared/corpus.js";
 import { clearState, loadState, saveState, StorageLike } from "../shared/storage.js";
 import { AppState, PASSCODE_LENGTH, Profile, ReadingBand, ReadingText, ResultKind } from "../shared/type.app.js";
@@ -78,6 +85,12 @@ export class AppStore extends EventTarget {
     this.replaceProfile(applyColorPair(profile, colorPairIndex));
   }
 
+  setProfileLevel(id: string, level: number): void {
+    const profile = this.state.profiles.find((item) => item.id === id);
+    if (!profile) return;
+    this.replaceProfile(ensureCurrentText(setExactLevel(profile, level), corpus));
+  }
+
   removeProfile(id: string): void {
     const profiles = this.state.profiles.filter((profile) => profile.id !== id);
     const currentProfileId =
@@ -140,7 +153,8 @@ export class AppStore extends EventTarget {
   }
 
   importSharedProfile(incoming: Profile): Profile {
-    const profile = ensureCurrentText({ ...incoming, id: createId() }, corpus);
+    const normalized = normalizeImportedProfile(incoming);
+    const profile = ensureCurrentText({ ...normalized, id: createId() }, corpus);
     this.state = {
       ...this.state,
       profiles: [...this.state.profiles, profile],
