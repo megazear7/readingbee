@@ -11,7 +11,7 @@ import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
 import { WarningEvent } from "./event.warning.js";
-import { backIcon, chevronIcon, downloadIcon, lockIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
+import { backIcon, downloadIcon, lockIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -159,9 +159,7 @@ export class ReadingBeeSettings extends LitElement {
         flex: 1;
         min-width: 0;
         display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        gap: 0.45rem;
+        gap: 0.12rem;
         text-align: left;
         background: none;
         border: 0;
@@ -177,12 +175,6 @@ export class ReadingBeeSettings extends LitElement {
         box-shadow: 0 0 0 3px rgba(232, 184, 74, 0.28);
       }
 
-      .who {
-        min-width: 0;
-        display: grid;
-        gap: 0.12rem;
-      }
-
       .identity strong {
         font-size: 1.02rem;
         overflow: hidden;
@@ -194,21 +186,6 @@ export class ReadingBeeSettings extends LitElement {
         color: var(--color-primary-text-muted);
         font-size: 0.78rem;
         line-height: 1.25;
-      }
-
-      .chevron {
-        color: var(--color-primary-text-muted);
-        display: grid;
-        place-items: center;
-        transition:
-          color var(--time-normal) ease,
-          transform var(--time-normal) ease;
-      }
-
-      .profile-card:hover .chevron,
-      .identity:hover .chevron {
-        color: var(--color-1);
-        transform: translateX(2px);
       }
 
       .level {
@@ -599,11 +576,8 @@ export class ReadingBeeSettings extends LitElement {
             class="identity"
             aria-label="Teacher view for ${profile.name}"
             @click=${(event: Event) => this.openTeacher(profile.id, event)}>
-            <span class="who">
-              <strong>${profile.name}</strong>
-              <small>${snap.headline}</small>
-            </span>
-            <span class="chevron">${chevronIcon}</span>
+            <strong>${profile.name}</strong>
+            <small>${snap.headline}</small>
           </button>
           <div class="level-wrap">
             <button
