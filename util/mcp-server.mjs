@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
@@ -108,18 +109,23 @@ server.registerTool(
     try {
       const b64 = await generateImage(description);
       let outputPath = resolveDestination(destination);
+      let replaced = false;
       if (!outputPath) {
         await mkdir(OUTPUT_DIR, { recursive: true });
         outputPath = join(OUTPUT_DIR, `image-${Date.now()}.png`);
       } else {
         await mkdir(dirname(outputPath), { recursive: true });
+        if (existsSync(outputPath)) {
+          await unlink(outputPath);
+          replaced = true;
+        }
       }
       await writeFile(outputPath, Buffer.from(b64, "base64"));
       return {
         content: [
           {
             type: "text",
-            text: `Saved ${outputPath}`,
+            text: replaced ? `Replaced ${outputPath}` : `Saved ${outputPath}`,
           },
           {
             type: "image",

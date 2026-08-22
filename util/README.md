@@ -38,4 +38,5 @@ args = ["util/mcp-server.mjs"]
 
 The server loads `util/.env` automatically. If `destination` is omitted, PNGs
 are written to `util/output/`. If `destination` is set, it is resolved from the
-repository root, for example `src/static/letters/bat.png`.
+repository root, for example `src/static/letters/bat.png`. An image already at
+that path is replaced.
