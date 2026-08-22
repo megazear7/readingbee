@@ -196,7 +196,6 @@ export class ReadingBeeCoinFlight extends LitElement {
       if (!flyer.launched) {
         flyer.launched = true;
         this.burst(flyer.originX, flyer.originY, 18, 0.28);
-        playCoinSound();
       }
       if (flyer.arrived) {
         continue;
@@ -205,6 +204,7 @@ export class ReadingBeeCoinFlight extends LitElement {
       if (local >= flyer.duration) {
         flyer.arrived = true;
         this.finishBurst(flyer.targetX, flyer.targetY);
+        playCoinSound();
         continue;
       }
       const u = easeInOut(Math.min(1, local / flyer.duration));
