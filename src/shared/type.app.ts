@@ -42,6 +42,8 @@ export const TextStat = z.object({
   wayTooEasy: z.number().int().nonnegative(),
   cooldown: z.number().int().nonnegative(),
   retired: z.boolean(),
+  lastPictureAt: z.string().optional(),
+  pictureRefreshLeft: z.number().int().nonnegative().optional(),
 });
 export type TextStat = z.infer<typeof TextStat>;
 
