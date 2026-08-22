@@ -23,7 +23,7 @@ export class ReadingBeeReading extends LitElement {
       :host {
         display: block;
         height: 100%;
-        max-height: 100svh;
+        max-height: 100%;
         overflow: hidden;
       }
 

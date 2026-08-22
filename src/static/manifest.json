@@ -2,6 +2,7 @@
   "name": "Reading Bee",
   "short_name": "Reading Bee",
   "description": "Reading Bee helps beginner readers learn to read.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "icons": [

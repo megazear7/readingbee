@@ -119,3 +119,19 @@ reading-bee-app {
 reading-bee-app:has(reading-bee-reading) {
   overflow: hidden;
 }
+
+@media (display-mode: fullscreen), (display-mode: standalone), (display-mode: minimal-ui) {
+  html,
+  body {
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+  }
+}
+
+html.in-app,
+html.in-app body {
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+}

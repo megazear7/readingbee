@@ -7,6 +7,7 @@ import { AppView } from "./event.view.js";
 import { pathForView, viewFromPath } from "./nav.js";
 import { WarningEventName } from "./event.warning.js";
 import { appStore } from "./store.js";
+import { lockMobileAppDisplay } from "./fullscreen.js";
 import { registerServiceWorker } from "./sw-update.js";
 import "./component.import-profile.js";
 import "./component.onboarding.js";
@@ -35,6 +36,7 @@ export class ReadingBeeApp extends LitElement {
     document.addEventListener(SuccessEventName.value, this.onSuccess);
     window.addEventListener("popstate", this.onPopState);
     this.registerServiceWorker();
+    lockMobileAppDisplay();
   }
 
   override disconnectedCallback(): void {
