@@ -2,7 +2,7 @@ import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { READING_BANDS } from "../shared/bands.js";
 import { avatarStyle, profileInitial } from "../shared/colors.js";
-import { PROFILE_SHARE_PARAM, readSharedProfileFromSearch } from "../shared/profile-share.js";
+import { findProfileByName, PROFILE_SHARE_PARAM, readSharedProfileFromSearch } from "../shared/profile-share.js";
 import { Profile } from "../shared/type.app.js";
 import { ReadingBeeModal } from "./component.modal.js";
 import { SuccessEvent } from "./event.success.js";
@@ -23,7 +23,7 @@ export class ReadingBeeImportProfile extends LitElement {
         justify-items: center;
         text-align: center;
         gap: 0.4rem;
-        margin: 0.4rem 0 1.1rem;
+        margin: 0.4rem 0 0.4rem;
       }
 
       .avatar {
@@ -58,6 +58,15 @@ export class ReadingBeeImportProfile extends LitElement {
         gap: 0.6rem;
         flex-wrap: wrap;
       }
+
+      .stack {
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      .stack button {
+        width: 100%;
+      }
     `,
   ];
 
@@ -69,21 +78,28 @@ export class ReadingBeeImportProfile extends LitElement {
   }
 
   override render(): TemplateResult {
+    const match = this.match();
+    const title = this.pending ? (match ? `${this.pending.name} is already here` : `Add ${this.pending.name}?`) : "";
     return html`
       <reading-bee-modal @ModelClosing=${this.onClose}>
         ${
-          this.pending
+          title
             ? html`
-                <h2 slot="title">Add ${this.pending.name}?</h2>
+                <h2 slot="title">${title}</h2>
               `
             : ""
         }
-        <div slot="body">${this.body()}</div>
+        <div slot="body">${this.body(match)}</div>
       </reading-bee-modal>
     `;
   }
 
-  private body(): TemplateResult {
+  private match(): Profile | undefined {
+    if (!this.pending) return undefined;
+    return findProfileByName(appStore.state.profiles, this.pending.name, appStore.state.currentProfileId);
+  }
+
+  private body(match: Profile | undefined): TemplateResult {
     const profile = this.pending;
     if (!profile) {
       return html``;
@@ -91,7 +107,18 @@ export class ReadingBeeImportProfile extends LitElement {
     const band = READING_BANDS.find((item) => item.id === profile.band);
     return html`
       <div class="confirm">
-        <p>This will add their profile and reading history to this device.</p>
+        ${
+          match
+            ? html`
+                <p>
+                  This device already has a student named ${match.name} (level ${match.level}). You can add this as a
+                  new copy, or replace the existing profile and its reading history.
+                </p>
+              `
+            : html`
+                <p>This will add their profile and reading history to this device.</p>
+              `
+        }
         <div class="preview">
           <div class="avatar" style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>
             ${profileInitial(profile.name)}
@@ -99,10 +126,24 @@ export class ReadingBeeImportProfile extends LitElement {
           <strong>${profile.name}</strong>
           <div class="level">Level ${profile.level}${band ? ` · ${band.label}` : ""}</div>
         </div>
-        <div class="confirm-row">
-          <button class="ghost-btn" @click=${() => this.modal.close()}>Cancel</button>
-          <button class="primary-btn" @click=${this.confirm}>Add profile</button>
-        </div>
+        ${
+          match
+            ? html`
+                <div class="stack">
+                  <button class="ghost-btn copy-btn" @click=${this.confirmCopy}>Import as copy</button>
+                  <button class="danger-btn replace-btn" @click=${() => this.confirmReplace(match.id)}>
+                    Replace existing profile
+                  </button>
+                  <button class="ghost-btn" @click=${() => this.modal.close()}>Cancel</button>
+                </div>
+              `
+            : html`
+                <div class="confirm-row">
+                  <button class="ghost-btn" @click=${() => this.modal.close()}>Cancel</button>
+                  <button class="primary-btn" @click=${this.confirmCopy}>Add profile</button>
+                </div>
+              `
+        }
       </div>
     `;
   }
@@ -124,13 +165,23 @@ export class ReadingBeeImportProfile extends LitElement {
     });
   }
 
-  private confirm = async (): Promise<void> => {
+  private confirmCopy = async (): Promise<void> => {
     if (!this.pending) return;
     const incoming = this.pending;
     await this.modal.close();
     const imported = appStore.importSharedProfile(incoming);
     this.clearShareQuery();
     dispatch(this, SuccessEvent(`${imported.name} added`));
+    navigate("reading");
+  };
+
+  private confirmReplace = async (id: string): Promise<void> => {
+    if (!this.pending) return;
+    const incoming = this.pending;
+    await this.modal.close();
+    const replaced = appStore.replaceSharedProfile(id, incoming);
+    this.clearShareQuery();
+    dispatch(this, SuccessEvent(`${replaced.name} updated`));
     navigate("reading");
   };
 

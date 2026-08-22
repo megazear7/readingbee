@@ -25,6 +25,19 @@ export const readSharedProfileFromSearch = (search: string): Profile | null => {
   return value ? decodeProfileParam(value) : null;
 };
 
+export const namesMatch = (left: string, right: string): boolean => {
+  return left.trim().toLocaleLowerCase() === right.trim().toLocaleLowerCase();
+};
+
+export const findProfileByName = (
+  profiles: Profile[],
+  name: string,
+  currentProfileId: string | null = null,
+): Profile | undefined => {
+  const matches = profiles.filter((profile) => namesMatch(profile.name, name));
+  return matches.find((profile) => profile.id === currentProfileId) ?? matches[0];
+};
+
 export const shouldNativeShare = (): boolean => {
   if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
     return false;

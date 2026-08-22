@@ -478,6 +478,34 @@ try {
   if (importedName !== "Sam") {
     throw new Error(`Imported profile showed ${importedName}`);
   }
+  await withPage(page, [...readingProfile, "reading-bee-modal", "shadow", "button.close-button"], "node.click();");
+  await page.waitForFunction(() => document.body.style.overflow !== "hidden");
+
+  const matchingAva = { ...sharedProfile, id: "share-ava", name: "Ava", level: 11, band: "words", boostLevel: 11 };
+  await page.goto(`${BASE}/?profile=${encodeURIComponent(JSON.stringify(matchingAva))}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 20000,
+  });
+  await page.waitForSelector("reading-bee-import-profile", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const modal = document.querySelector("reading-bee-import-profile")?.shadowRoot?.querySelector("reading-bee-modal");
+    const backdrop = modal?.shadowRoot?.querySelector(".modal-backdrop");
+    return backdrop?.classList.contains("visible");
+  });
+  const matchTitle = await textOf(page, ["reading-bee-import-profile", "shadow", "h2"]);
+  if (!matchTitle.includes("already here")) {
+    throw new Error(`Name-match import modal showed ${matchTitle}`);
+  }
+  const matchActions = await withPage(
+    page,
+    ["reading-bee-import-profile", "shadow"],
+    `return [...node.querySelectorAll("button")].map((button) => button.textContent.trim()).join("|");`,
+  );
+  if (!matchActions.includes("Import as copy") || !matchActions.includes("Replace existing profile")) {
+    throw new Error(`Name-match import actions were ${matchActions}`);
+  }
+  await click(page, ["reading-bee-import-profile", "shadow", "button.copy-btn"]);
+  await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
 
   console.log("e2e ok");
   console.log(JSON.stringify({ firstPrompt, secondPrompt }, null, 2));

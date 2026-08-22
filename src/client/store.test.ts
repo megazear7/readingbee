@@ -172,6 +172,40 @@ describe("AppStore", () => {
     assert.equal(target.currentProfile?.id, imported.id);
   });
 
+  it("imports a same-named profile as a separate copy", () => {
+    const source = new AppStore(memoryStorage());
+    source.createFirstProfile("Ava", "words");
+    source.setProfileLevel(source.currentProfile!.id, 20);
+    const shared = source.currentProfile!;
+    const target = new AppStore(memoryStorage());
+    target.createFirstProfile("Ava", "letters");
+    const existingId = target.currentProfile!.id;
+    const imported = target.importSharedProfile(shared);
+    assert.equal(target.state.profiles.length, 2);
+    assert.equal(imported.name, "Ava");
+    assert.notEqual(imported.id, existingId);
+    assert.equal(target.state.profiles.find((profile) => profile.id === existingId)?.level, 1);
+    assert.equal(imported.level, 20);
+  });
+
+  it("replaces an existing profile and keeps its id", () => {
+    const source = new AppStore(memoryStorage());
+    source.createFirstProfile("Ava", "words");
+    source.setProfileLevel(source.currentProfile!.id, 20);
+    const shared = source.currentProfile!;
+    const target = new AppStore(memoryStorage());
+    target.createFirstProfile("ava", "letters");
+    const existingId = target.currentProfile!.id;
+    const createdAt = target.currentProfile!.createdAt;
+    const replaced = target.replaceSharedProfile(existingId, shared);
+    assert.equal(target.state.profiles.length, 1);
+    assert.equal(replaced.id, existingId);
+    assert.equal(replaced.createdAt, createdAt);
+    assert.equal(replaced.level, 20);
+    assert.equal(replaced.band, "words");
+    assert.equal(target.currentProfile?.id, existingId);
+  });
+
   it("replaces all data on import", () => {
     const source = new AppStore(memoryStorage());
     source.createFirstProfile("Ava", "words");

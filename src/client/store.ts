@@ -232,6 +232,29 @@ export class AppStore extends EventTarget {
     return profile;
   }
 
+  replaceSharedProfile(id: string, incoming: Profile): Profile {
+    const existing = this.state.profiles.find((profile) => profile.id === id);
+    if (!existing) {
+      return this.importSharedProfile(incoming);
+    }
+    const normalized = normalizeImportedProfile(incoming);
+    const profile = ensureCurrentText(
+      withProgress({
+        ...normalized,
+        id: existing.id,
+        createdAt: existing.createdAt,
+      }),
+      corpus,
+    );
+    this.state = {
+      ...this.state,
+      profiles: this.state.profiles.map((item) => (item.id === existing.id ? profile : item)),
+      currentProfileId: existing.id,
+    };
+    this.persist();
+    return profile;
+  }
+
   importState(next: AppState): void {
     const profiles = next.profiles.map((profile) => ensureCurrentText(withProgress(profile), corpus));
     const currentProfileId = profiles.some((profile) => profile.id === next.currentProfileId)
