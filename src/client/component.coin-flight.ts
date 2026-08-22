@@ -108,21 +108,21 @@ export class ReadingBeeCoinFlight extends LitElement {
 
   private spawn(): void {
     const n = Math.max(1, Math.round(this.count));
-    const stagger = n > 1 ? 0.08 : 0;
+    const stagger = n > 1 ? 0.32 : 0;
     this.flyers = Array.from({ length: n }, (_, index) => {
-      const originX = this.originX + (Math.random() - 0.5) * 16;
-      const originY = this.originY + (Math.random() - 0.5) * 10;
-      const targetX = this.targetX + (Math.random() - 0.5) * 10;
-      const targetY = this.targetY + (Math.random() - 0.5) * 8;
+      const originX = this.originX + (Math.random() - 0.5) * 36;
+      const originY = this.originY + (Math.random() - 0.5) * 22;
+      const targetX = this.targetX + (Math.random() - 0.5) * 14;
+      const targetY = this.targetY + (Math.random() - 0.5) * 10;
       return {
-        delay: index * stagger,
-        duration: ARRIVE_AT,
+        delay: index * stagger + (n > 1 ? Math.random() * 0.08 : 0),
+        duration: ARRIVE_AT + (n > 1 ? (Math.random() - 0.5) * 0.22 : 0),
         originX,
         originY,
         targetX,
         targetY,
-        controlX: (originX + targetX) / 2 + (Math.random() - 0.5) * 120,
-        controlY: Math.min(originY, targetY) - 40 - Math.random() * 50,
+        controlX: (originX + targetX) / 2 + (Math.random() - 0.5) * 180,
+        controlY: Math.min(originY, targetY) - 50 - Math.random() * 70,
         spin: Math.random() * Math.PI * 2,
         vs: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 8),
         startR: 15 + Math.random() * 4,
@@ -232,8 +232,8 @@ export class ReadingBeeCoinFlight extends LitElement {
       this.drawSparkle(ctx, sparkle);
     }
 
-    const last = this.flyers[this.flyers.length - 1];
-    const doneAt = (last ? last.delay + last.duration : ARRIVE_AT) + (DURATION - ARRIVE_AT);
+    const lastLand = this.flyers.reduce((max, flyer) => Math.max(max, flyer.delay + flyer.duration), ARRIVE_AT);
+    const doneAt = lastLand + (DURATION - ARRIVE_AT);
     if (elapsed >= doneAt) {
       if (!this.finished) {
         this.finished = true;

@@ -505,6 +505,7 @@ export class ReadingBeeReading extends LitElement {
   @state() private updateChipLeaving = false;
   @state() private tipsDismissed = false;
   @state() private locked = false;
+  @state() private busyAction: ResultKind | null = null;
   private pendingLevelUp = 0;
   private rippleSeq = 0;
 
@@ -587,13 +588,16 @@ export class ReadingBeeReading extends LitElement {
               <button
                 class="score-btn yes"
                 aria-label="Mastered this one"
-                ?disabled=${this.actionsLocked}
+                ?disabled=${this.actionDisabled("right")}
                 @click=${(event: Event) => this.record("right", event)}>
                 ${checkIcon}
               </button>
               <span class="tip" role="tooltip">Mastered this one</span>
             </div>
-            <button class="muted" ?disabled=${this.actionsLocked} @click=${() => this.record("wayTooEasy")}>
+            <button
+              class="muted"
+              ?disabled=${this.actionDisabled("wayTooEasy")}
+              @click=${() => this.record("wayTooEasy")}>
               Way too easy
             </button>
           </div>
@@ -602,13 +606,15 @@ export class ReadingBeeReading extends LitElement {
               <button
                 class="score-btn no"
                 aria-label="Needs more practice"
-                ?disabled=${this.actionsLocked}
+                ?disabled=${this.actionDisabled("wrong")}
                 @click=${(event: Event) => this.record("wrong", event)}>
                 ${raindropIcon}
               </button>
               <span class="tip" role="tooltip">Needs more practice</span>
             </div>
-            <button class="muted" ?disabled=${this.actionsLocked} @click=${() => this.record("skip")}>Skip</button>
+            <button class="muted" ?disabled=${this.actionDisabled("skip")} @click=${() => this.record("skip")}>
+              Skip
+            </button>
           </div>
         </footer>
         ${this.ripples.map(
@@ -676,8 +682,8 @@ export class ReadingBeeReading extends LitElement {
     this.tipsDismissed = false;
   };
 
-  private get actionsLocked(): boolean {
-    return this.locked || this.celebrating || this.holdingIncoming || this.incomingEnter;
+  private actionDisabled(action: ResultKind): boolean {
+    return this.celebrating || this.busyAction === action;
   }
 
   private dismissTips(event?: Event): void {
@@ -696,6 +702,7 @@ export class ReadingBeeReading extends LitElement {
       this.spawnRipple(result === "right" ? "yes" : "no", event);
     }
     const previousLevel = appStore.currentProfile?.level ?? 0;
+    this.busyAction = result;
     this.locked = true;
     this.outgoingPicture = pictureFor(current, appStore.currentProfile ?? undefined);
     this.outgoing = current;
@@ -715,6 +722,7 @@ export class ReadingBeeReading extends LitElement {
         this.startCelebration(this.pendingLevelUp);
         this.pendingLevelUp = 0;
       } else {
+        this.busyAction = null;
         this.locked = false;
       }
     }, ReadingBeeReading.slideMs);
@@ -737,6 +745,7 @@ export class ReadingBeeReading extends LitElement {
     this.incomingEnter = true;
     window.setTimeout(() => {
       this.incomingEnter = false;
+      this.busyAction = null;
       this.locked = false;
     }, ReadingBeeReading.slideMs);
   };

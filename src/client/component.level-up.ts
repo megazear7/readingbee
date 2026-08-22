@@ -1,5 +1,5 @@
 import { css, html, LitElement, TemplateResult } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 
 type Particle = {
   kind: "confetti" | "spark" | "hex";
@@ -54,6 +54,11 @@ export class ReadingBeeLevelUp extends LitElement {
         animation: popIn 720ms cubic-bezier(0.16, 1.2, 0.32, 1) both;
       }
 
+      .copy.is-leaving {
+        pointer-events: none;
+        animation: slideOutLeft 360ms ease forwards;
+      }
+
       .kicker {
         margin: 0 0 0.35rem;
         font-size: 0.92rem;
@@ -96,8 +101,20 @@ export class ReadingBeeLevelUp extends LitElement {
         }
       }
 
+      @keyframes slideOutLeft {
+        from {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translate(calc(-50% - 48vw), -50%) scale(1);
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
-        .copy {
+        .copy,
+        .copy.is-leaving {
           animation: none;
         }
       }
@@ -107,6 +124,7 @@ export class ReadingBeeLevelUp extends LitElement {
   @property({ type: Number }) level = 1;
   @property({ type: Number }) originX = 0;
   @property({ type: Number }) originY = 0;
+  @state() private leaving = false;
   @query("canvas") private canvas!: HTMLCanvasElement;
 
   private frame = 0;
@@ -139,7 +157,7 @@ export class ReadingBeeLevelUp extends LitElement {
     return html`
       <div class="overlay">
         <canvas aria-hidden="true"></canvas>
-        <div class="copy" @click=${this.close}>
+        <div class="copy ${this.leaving ? "is-leaving" : ""}" @click=${this.close}>
           <p class="kicker">Level up</p>
           <p class="level">${this.level}</p>
           <p class="hint">Tap to continue</p>
@@ -158,7 +176,12 @@ export class ReadingBeeLevelUp extends LitElement {
   private close = (): void => {
     if (this.closing) return;
     this.closing = true;
-    this.dispatchEvent(new Event("done"));
+    if (this.reduced) {
+      this.dispatchEvent(new Event("done"));
+      return;
+    }
+    this.leaving = true;
+    window.setTimeout(() => this.dispatchEvent(new Event("done")), 360);
   };
 
   private resize(): void {
