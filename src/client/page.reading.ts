@@ -1,5 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { repeat } from "lit/directives/repeat.js";
 import { avatarStyle, profileInitial } from "../shared/colors.js";
 import { pictureFor } from "../shared/letter-pictures.js";
 import { ReadingText, ResultKind } from "../shared/type.app.js";
@@ -223,6 +224,11 @@ export class ReadingBeeReading extends LitElement {
         max-width: 18ch;
         text-wrap: pretty;
         display: grid;
+        place-items: center;
+      }
+
+      .pair {
+        display: grid;
         justify-items: center;
         align-content: center;
         gap: 0.75rem;
@@ -278,10 +284,14 @@ export class ReadingBeeReading extends LitElement {
       .prompt.leave {
         animation: slideOutLeft 360ms ease forwards;
         pointer-events: none;
+        z-index: 2;
       }
 
       .prompt.enter {
+        opacity: 0;
+        transform: translateX(48vw);
         animation: slideInRight 360ms ease forwards;
+        z-index: 1;
       }
 
       @keyframes slideOutLeft {
@@ -310,6 +320,8 @@ export class ReadingBeeReading extends LitElement {
         .prompt.leave,
         .prompt.enter {
           animation: none;
+          opacity: 1;
+          transform: none;
         }
       }
 
@@ -514,6 +526,7 @@ export class ReadingBeeReading extends LitElement {
   @state() private coinTargetX = 0;
   @state() private coinTargetY = 0;
   @state() private outgoingPicture: string | undefined;
+  @state() private incomingPicture: string | undefined;
   @state() private appUpdated = false;
   @state() private updateChipLeaving = false;
   @state() private tipsDismissed = false;
@@ -527,6 +540,7 @@ export class ReadingBeeReading extends LitElement {
   private pendingLevelUp = 0;
   private pendingAchievements: string[] = [];
   private rippleSeq = 0;
+  private slideSeq = 0;
 
   constructor() {
     super();
@@ -600,8 +614,32 @@ export class ReadingBeeReading extends LitElement {
           </div>
         </header>
         <div class="stage">
-          ${this.holdingIncoming ? "" : this.promptView(text, this.incomingEnter || this.outgoing ? "enter" : "")}
-          ${this.outgoing ? this.promptView(this.outgoing, "leave") : ""}
+          ${repeat(
+            this.slidePrompts(text, profile),
+            (slide) => slide.key,
+            (slide) => html`
+              <div
+                class="prompt ${slide.extraClass} ${slide.picture ? "has-picture" : ""}"
+                data-kind=${slide.text.kind}>
+                <div class="pair">
+                  <span class="glyph">${slide.text.text}</span>
+                  ${
+                    slide.picture
+                      ? html`
+                          <img
+                            class="picture"
+                            src=${slide.picture}
+                            alt=""
+                            aria-hidden="true"
+                            decoding="async"
+                            fetchpriority="high" />
+                        `
+                      : ""
+                  }
+                </div>
+              </div>
+            `,
+          )}
         </div>
         <footer>
           <div class="action">
@@ -685,21 +723,30 @@ export class ReadingBeeReading extends LitElement {
     `;
   }
 
-  private promptView(text: ReadingText, extraClass: string): TemplateResult {
-    const picture =
-      extraClass === "leave" ? this.outgoingPicture : pictureFor(text, appStore.currentProfile ?? undefined);
-    return html`
-      <div class="prompt ${extraClass} ${picture ? "has-picture" : ""}" data-kind=${text.kind}>
-        <span class="glyph">${text.text}</span>
-        ${
-          picture
-            ? html`
-                <img class="picture" src=${picture} alt="" aria-hidden="true" decoding="async" fetchpriority="high" />
-              `
-            : ""
-        }
-      </div>
-    `;
+  private slidePrompts(
+    text: ReadingText,
+    profile: NonNullable<typeof appStore.currentProfile>,
+  ): { key: string; text: ReadingText; extraClass: string; picture: string | undefined }[] {
+    const slides: { key: string; text: ReadingText; extraClass: string; picture: string | undefined }[] = [];
+    if (!this.holdingIncoming) {
+      const extraClass = this.incomingEnter || this.outgoing ? "enter" : "";
+      const picture = extraClass ? this.incomingPicture : pictureFor(text, profile);
+      slides.push({
+        key: `in-${text.id}`,
+        text,
+        extraClass,
+        picture,
+      });
+    }
+    if (this.outgoing) {
+      slides.push({
+        key: `out-${this.slideSeq}`,
+        text: this.outgoing,
+        extraClass: "leave",
+        picture: this.outgoingPicture,
+      });
+    }
+    return slides;
   }
 
   private openSettings = (): void => {
@@ -739,9 +786,12 @@ export class ReadingBeeReading extends LitElement {
     const previousAchievements = appStore.currentProfile?.achievements ?? [];
     this.busyAction = result;
     this.locked = true;
+    this.slideSeq += 1;
     this.outgoingPicture = pictureFor(current, appStore.currentProfile ?? undefined);
     this.outgoing = current;
     const { awardedCoins } = appStore.record(result);
+    const nextText = appStore.currentText;
+    this.incomingPicture = nextText ? pictureFor(nextText, appStore.currentProfile ?? undefined) : undefined;
     const earned = (appStore.currentProfile?.achievements ?? []).filter((id) => !previousAchievements.includes(id));
     this.pendingAchievements = [...this.pendingAchievements, ...earned];
     if (awardedCoins > 0 && !this.flyingCoin) {
