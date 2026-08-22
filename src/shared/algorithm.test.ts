@@ -212,11 +212,20 @@ describe("applyResult", () => {
     assert.equal(profile.wrongStreak, 3);
   });
 
-  it("returns a missed letter so its picture can come back", () => {
+  it("does not immediately repeat a missed letter", () => {
     let profile = createProfile("Ava", "letters", []);
-    profile = score(profile, "t-1-0", "right");
     profile = score(profile, "t-1-0", "wrong");
     assert.equal(profile.level, 1);
+    const next = pickNext(profile, corpus, seedRng(5));
+    assert.notEqual(next.id, "t-1-0");
+  });
+
+  it("returns a missed letter after another prompt so its picture can come back", () => {
+    let profile = createProfile("Ava", "letters", []);
+    profile = score(profile, "t-1-0", "wrong");
+    const other = pickNext(profile, corpus, seedRng(5));
+    assert.notEqual(other.id, "t-1-0");
+    profile = score(profile, other.id, "right");
     const next = pickNext(profile, corpus, seedRng(5));
     assert.equal(next.id, "t-1-0");
   });

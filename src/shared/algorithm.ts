@@ -216,11 +216,11 @@ const isLetterCycleEligible = (profile: Profile, text: ReadingText, relax: "stri
   if (stat.cooldown > 0) {
     return false;
   }
-  if (needsSupport(profile, text.id)) {
-    return true;
-  }
   if (text.id === profile.lastTextId) {
     return false;
+  }
+  if (needsSupport(profile, text.id)) {
+    return true;
   }
   if (relax === "strict" && profile.recentTextIds.includes(text.id)) {
     return false;

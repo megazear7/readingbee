@@ -3,6 +3,7 @@ import { LETTERS_MAX_LEVEL, Profile, ReadingText } from "./type.app.js";
 
 export const PICTURE_MAX_LEVEL = LETTERS_MAX_LEVEL;
 export const PICTURE_HIDE_STREAK = 6;
+export const PICTURE_REFRESH_STREAK = 3;
 
 export const LETTER_PICTURES: Record<string, string> = {
   a: "/letters/apple.png",
@@ -37,6 +38,22 @@ export const LETTER_PICTURES: Record<string, string> = {
   sh: "/letters/ship.png",
 };
 
+const consecutiveRights = (profile: Profile, textId: string): number => {
+  let streak = 0;
+  for (let i = profile.events.length - 1; i >= 0; i -= 1) {
+    const event = profile.events[i];
+    if (event.textId !== textId || event.result === "skip") {
+      continue;
+    }
+    if (event.result === "right") {
+      streak += 1;
+      continue;
+    }
+    break;
+  }
+  return streak;
+};
+
 const hasUnlockedPictureRemoval = (profile: Profile, textId: string): boolean => {
   let streak = 0;
   for (const event of profile.events) {
@@ -66,10 +83,15 @@ export const pictureFor = (text: ReadingText, profile?: Profile): string | undef
   if (!picture || !profile) {
     return picture;
   }
-  if (latestResult(profile, text.id) === "wrong") {
+  const latest = latestResult(profile, text.id);
+  if (latest === "wrong") {
     return picture;
   }
-  if (hasUnlockedPictureRemoval(profile, text.id)) {
+  if (latest === "wayTooEasy") {
+    return undefined;
+  }
+  const needed = hasUnlockedPictureRemoval(profile, text.id) ? PICTURE_REFRESH_STREAK : PICTURE_HIDE_STREAK;
+  if (consecutiveRights(profile, text.id) >= needed) {
     return undefined;
   }
   return picture;

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyResult, createProfile } from "./algorithm.js";
 import { corpus } from "./corpus.js";
-import { LETTER_PICTURES, PICTURE_HIDE_STREAK, pictureFor } from "./letter-pictures.js";
+import { LETTER_PICTURES, PICTURE_HIDE_STREAK, PICTURE_REFRESH_STREAK, pictureFor } from "./letter-pictures.js";
 import { ReadingText } from "./type.app.js";
 
 const letter = (text: string, level = 1): ReadingText => ({
@@ -83,7 +83,7 @@ describe("pictureFor", () => {
     assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
   });
 
-  it("hides the picture again after one correct once it has already been removed", () => {
+  it("hides the picture again after three correct in a row once it has already been removed", () => {
     let profile = createProfile("Ava", "letters", []);
     const a = letter("a");
     for (let i = 0; i < PICTURE_HIDE_STREAK; i += 1) {
@@ -91,6 +91,10 @@ describe("pictureFor", () => {
     }
     profile = mark(profile, a, "wrong");
     assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+    for (let i = 0; i < PICTURE_REFRESH_STREAK - 1; i += 1) {
+      profile = mark(profile, a, "right");
+      assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+    }
     profile = mark(profile, a, "right");
     assert.equal(pictureFor(a, profile), undefined);
   });
