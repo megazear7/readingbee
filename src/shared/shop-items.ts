@@ -325,9 +325,9 @@ export const SHOP_TEASE_LIGHT_ROWS = 2;
 export const SHOP_TEASE_HEAVY_ROWS = 2;
 export const SHOP_TEASE_ROWS = SHOP_TEASE_LIGHT_ROWS + SHOP_TEASE_HEAVY_ROWS;
 
-export const visibleShopCount = (coinsEarned: number): number => {
-  const earned = Math.max(0, Math.round(coinsEarned));
-  const rows = earned + SHOP_UNLOCKED_EXTRA_ROWS;
+export const visibleShopCount = (peakCoins: number): number => {
+  const peak = Math.max(0, Math.round(peakCoins));
+  const rows = peak + SHOP_UNLOCKED_EXTRA_ROWS;
   return Math.min(SHOP_ITEMS.length, rows * SHOP_COLUMNS);
 };
 
@@ -336,8 +336,8 @@ export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 
   return Math.max(coinsEarned, coins + spent);
 };
 
-export const shopTeaseCount = (coinsEarned: number): number => {
-  const reveal = visibleShopCount(coinsEarned);
+export const shopTeaseCount = (peakCoins: number): number => {
+  const reveal = visibleShopCount(peakCoins);
   return Math.min(SHOP_ITEMS.length, reveal + SHOP_COLUMNS * SHOP_TEASE_ROWS);
 };
 

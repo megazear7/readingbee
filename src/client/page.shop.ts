@@ -188,21 +188,21 @@ export class ReadingBeeShop extends LitElement {
       }
 
       .row.mystery-1 .card img {
-        filter: blur(6px) grayscale(0.4) brightness(0.7);
-        opacity: 0.55;
+        filter: grayscale(1) blur(2px);
+        opacity: 0.82;
       }
 
       .row.mystery-1 .card::after {
-        background: rgba(12, 11, 9, 0.28);
+        background: rgba(12, 11, 9, 0.12);
       }
 
       .row.mystery-2 .card img {
-        filter: blur(12px) grayscale(0.8) brightness(0.35);
-        opacity: 0.28;
+        filter: grayscale(1) blur(4px);
+        opacity: 0.7;
       }
 
       .row.mystery-2 .card::after {
-        background: rgba(12, 11, 9, 0.62);
+        background: rgba(12, 11, 9, 0.22);
       }
 
       .tease {
@@ -291,8 +291,8 @@ export class ReadingBeeShop extends LitElement {
       `;
     }
     const owned = SHOP_ITEMS.filter((item) => profile.inventory.includes(item.id));
-    const reveal = visibleShopCount(profile.coinsEarned);
-    const teaseUntil = shopTeaseCount(profile.coinsEarned);
+    const reveal = visibleShopCount(profile.peakCoins);
+    const teaseUntil = shopTeaseCount(profile.peakCoins);
     const rows: { items: ShopItem[]; start: number }[] = [];
     for (let index = 0; index < teaseUntil; index += SHOP_COLUMNS) {
       rows.push({ items: SHOP_ITEMS.slice(index, index + SHOP_COLUMNS), start: index });

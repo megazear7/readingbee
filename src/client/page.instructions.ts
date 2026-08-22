@@ -144,9 +144,9 @@ export class ReadingBeeInstructions extends LitElement {
               The gold badge is the student's reading level. Tap it to open achievements: medals they have earned are
               in color, and ones they have not earned yet are gray. After a few correct reads, a gold coin can fly up
               to the top of the screen. A correct read counts fully toward the next coin, and an incorrect read counts
-              half as much. Tap the coin count to visit the shop and spend coins on rewards. Shop rows unlock from total
-              coins earned, plus two extra rows, even after coins are spent. Two softly blurred rows and two more
-              heavily blurred rows hint at what is next; anything past that stays hidden. The profile circle opens
+              half as much. Tap the coin count to visit the shop and spend coins on rewards. Shop rows unlock from the
+              most coins the student has held at once, plus two extra rows. Two softly blurred gray rows and two more
+              blurred gray rows hint at what is next; anything past that stays hidden. The profile circle opens
               switching and progress.
             </p>
             <h2>Settings</h2>

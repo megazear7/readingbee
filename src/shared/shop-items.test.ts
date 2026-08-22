@@ -70,7 +70,7 @@ describe("SHOP_ITEMS", () => {
     }
   });
 
-  it("unlocks earned-coin rows plus two extra, ignoring coins spent", () => {
+  it("unlocks rows from peak coins on hand plus two extra", () => {
     assert.equal(visibleShopCount(0), 6);
     assert.equal(visibleShopCount(1), 9);
     assert.equal(visibleShopCount(5), 21);
