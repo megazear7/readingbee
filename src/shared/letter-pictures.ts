@@ -1,9 +1,11 @@
-import { latestResult } from "./algorithm.js";
-import { LETTERS_MAX_LEVEL, Profile, ReadingText } from "./type.app.js";
+import { emptyTextStat, LETTERS_MAX_LEVEL, Profile, ReadingText, ResultKind } from "./type.app.js";
 
 export const PICTURE_MAX_LEVEL = LETTERS_MAX_LEVEL;
 export const PICTURE_HIDE_STREAK = 6;
 export const PICTURE_REFRESH_STREAK = 3;
+export const PICTURE_PERMANENT_STREAK = 30;
+export const PICTURE_MEMORY_SHOWS = 3;
+export const PICTURE_MEMORY_AFTER_MS = 60 * 60 * 1000;
 
 export const LETTER_PICTURES: Record<string, string> = {
   a: "/letters/apple.png",
@@ -36,6 +38,16 @@ export const LETTER_PICTURES: Record<string, string> = {
   th: "/letters/thumb.png",
   ch: "/letters/chair.png",
   sh: "/letters/ship.png",
+};
+
+const latestResult = (profile: Profile, textId: string): ResultKind | null => {
+  for (let i = profile.events.length - 1; i >= 0; i -= 1) {
+    const event = profile.events[i];
+    if (event.textId === textId && event.result !== "skip") {
+      return event.result;
+    }
+  }
+  return null;
 };
 
 const consecutiveRights = (profile: Profile, textId: string): number => {
@@ -75,7 +87,57 @@ const hasUnlockedPictureRemoval = (profile: Profile, textId: string): boolean =>
   return false;
 };
 
-export const pictureFor = (text: ReadingText, profile?: Profile): string | undefined => {
+const hideStreakNeeded = (profile: Profile, textId: string): number =>
+  hasUnlockedPictureRemoval(profile, textId) ? PICTURE_REFRESH_STREAK : PICTURE_HIDE_STREAK;
+
+const isNormallyHidden = (profile: Profile, textId: string): boolean => {
+  const latest = latestResult(profile, textId);
+  if (latest === "wrong" || latest === "wayTooEasy") {
+    return false;
+  }
+  const rights = consecutiveRights(profile, textId);
+  return rights >= hideStreakNeeded(profile, textId);
+};
+
+const lastPictureAt = (profile: Profile, textId: string): string | undefined => {
+  const stored = profile.textStats[textId]?.lastPictureAt;
+  if (stored) {
+    return stored;
+  }
+  // Infer for profiles saved before lastPictureAt existed: last answer while the
+  // picture would still have been in the learning / post-miss window.
+  let rights = 0;
+  let unlocked = false;
+  let inferred: string | undefined;
+  for (const event of profile.events) {
+    if (event.textId !== textId || event.result === "skip") {
+      continue;
+    }
+    const needed = unlocked ? PICTURE_REFRESH_STREAK : PICTURE_HIDE_STREAK;
+    if (event.result === "wrong") {
+      inferred = event.at;
+      rights = 0;
+      continue;
+    }
+    if (event.result === "wayTooEasy") {
+      unlocked = true;
+      rights = 0;
+      continue;
+    }
+    if (event.result === "right") {
+      if (rights < needed) {
+        inferred = event.at;
+      }
+      rights += 1;
+      if (rights >= PICTURE_HIDE_STREAK) {
+        unlocked = true;
+      }
+    }
+  }
+  return inferred;
+};
+
+export const pictureFor = (text: ReadingText, profile?: Profile, now = new Date()): string | undefined => {
   if (text.kind !== "letter" || text.level > PICTURE_MAX_LEVEL) {
     return undefined;
   }
@@ -90,9 +152,45 @@ export const pictureFor = (text: ReadingText, profile?: Profile): string | undef
   if (latest === "wayTooEasy") {
     return undefined;
   }
-  const needed = hasUnlockedPictureRemoval(profile, text.id) ? PICTURE_REFRESH_STREAK : PICTURE_HIDE_STREAK;
-  if (consecutiveRights(profile, text.id) >= needed) {
+  const rights = consecutiveRights(profile, text.id);
+  if (rights >= PICTURE_PERMANENT_STREAK) {
     return undefined;
   }
-  return picture;
+  const needed = hideStreakNeeded(profile, text.id);
+  if (rights < needed) {
+    return picture;
+  }
+  const refreshLeft = profile.textStats[text.id]?.pictureRefreshLeft ?? 0;
+  if (refreshLeft > 0) {
+    return picture;
+  }
+  const seenAt = lastPictureAt(profile, text.id);
+  if (seenAt && now.getTime() - new Date(seenAt).getTime() >= PICTURE_MEMORY_AFTER_MS) {
+    return picture;
+  }
+  return undefined;
+};
+
+/** Record that the student just saw this letter with its picture. */
+export const trackPictureSeen = (
+  profileAfter: Profile,
+  textId: string,
+  profileBefore: Profile,
+  at = new Date(),
+): Profile => {
+  const stat = { ...(profileAfter.textStats[textId] ?? emptyTextStat(textId)) };
+  if (isNormallyHidden(profileBefore, textId)) {
+    const left = stat.pictureRefreshLeft ?? 0;
+    stat.pictureRefreshLeft = left > 0 ? left - 1 : PICTURE_MEMORY_SHOWS - 1;
+  } else {
+    stat.pictureRefreshLeft = 0;
+  }
+  stat.lastPictureAt = at.toISOString();
+  return {
+    ...profileAfter,
+    textStats: {
+      ...profileAfter.textStats,
+      [textId]: stat,
+    },
+  };
 };
