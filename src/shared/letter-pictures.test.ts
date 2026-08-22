@@ -27,11 +27,11 @@ describe("pictureFor", () => {
   });
 
   it("has pictures for qu, wh, th, ch, and sh", () => {
-    assert.equal(pictureFor(letter("qu", 3)), "/letters/queen.webp");
-    assert.equal(pictureFor(letter("wh", 4)), "/letters/whistle.webp");
-    assert.equal(pictureFor(letter("th", 4)), "/letters/thumb.webp");
-    assert.equal(pictureFor(letter("ch", 4)), "/letters/chair.webp");
-    assert.equal(pictureFor(letter("sh", 4)), "/letters/ship.webp");
+    assert.equal(pictureFor(letter("qu", 3)), "/letters/queen.png");
+    assert.equal(pictureFor(letter("wh", 4)), "/letters/whistle.png");
+    assert.equal(pictureFor(letter("th", 4)), "/letters/thumb.png");
+    assert.equal(pictureFor(letter("ch", 4)), "/letters/chair.png");
+    assert.equal(pictureFor(letter("sh", 4)), "/letters/ship.png");
   });
 
   it("hides pictures once the student has mastered the sound", () => {

@@ -13,6 +13,7 @@ import { backIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import { playCoinSounds } from "./coin-sounds.js";
 import "./component.coin-spend.js";
 
 @customElement("reading-bee-shop")
@@ -371,6 +372,7 @@ export class ReadingBeeShop extends LitElement {
 
   private startSpend(item: ShopItem): void {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      playCoinSounds(item.cost);
       this.play(item.id);
       return;
     }

@@ -1,5 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
+import { playCoinSound } from "./coin-sounds.js";
 
 type Flyer = {
   delay: number;
@@ -38,20 +39,13 @@ type Ring = {
 };
 
 const COIN_START = 0.3;
-const COIN_SOUNDS = [
-  "/sounds/Coin01.mp3",
-  "/sounds/Coin02.mp3",
-  "/sounds/Coin03.mp3",
-  "/sounds/Coin04.mp3",
-  "/sounds/Coin05.mp3",
-];
 const easeInOut = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const quad = (start: number, control: number, end: number, t: number): number => {
   const rest = 1 - t;
   return rest * rest * start + 2 * rest * t * control + t * t * end;
 };
 
-export const SHOP_FRONT_IMAGE = "/shop-front.webp";
+export const SHOP_FRONT_IMAGE = "/shop-front.png";
 export const MAX_SPEND_COINS = 16;
 
 @customElement("reading-bee-coin-spend")
@@ -80,8 +74,8 @@ export class ReadingBeeCoinSpend extends LitElement {
         left: 50%;
         bottom: 0;
         z-index: 1;
-        width: min(94vw, 520px);
-        max-height: 44vh;
+        width: min(47vw, 260px);
+        max-height: 22vh;
         object-fit: contain;
         transform: translate(-50%, 115%);
         filter: drop-shadow(0 -10px 28px rgba(0, 0, 0, 0.5));
@@ -176,8 +170,8 @@ export class ReadingBeeCoinSpend extends LitElement {
     }
     const rect = shop.getBoundingClientRect();
     return {
-      x: rect.left + rect.width * 0.5,
-      y: rect.top + rect.height * 0.58,
+      x: rect.left + rect.width * 0.57,
+      y: rect.top + rect.height * 0.66,
     };
   }
 
@@ -246,7 +240,7 @@ export class ReadingBeeCoinSpend extends LitElement {
       if (!flyer.launched) {
         flyer.launched = true;
         this.burst(flyer.startX, flyer.startY, 7, 0.22, 120);
-        this.playCoinSound();
+        playCoinSound();
         this.dispatchEvent(new CustomEvent("coin-left", { bubbles: true, composed: true }));
       }
       if (flyer.arrived) {
@@ -298,13 +292,6 @@ export class ReadingBeeCoinSpend extends LitElement {
     }
     this.frame = requestAnimationFrame(this.tick);
   };
-
-  private playCoinSound(): void {
-    const src = COIN_SOUNDS[Math.floor(Math.random() * COIN_SOUNDS.length)];
-    const audio = new Audio(src);
-    audio.volume = 0.45;
-    void audio.play().catch(() => undefined);
-  }
 
   private complete(): void {
     if (this.finished) return;

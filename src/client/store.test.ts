@@ -122,6 +122,27 @@ describe("AppStore", () => {
     }
   });
 
+  it("sometimes awards a burst of two to five coins", () => {
+    const store = new AppStore(memoryStorage());
+    store.createFirstProfile("Ava", "words");
+    const profile = store.currentProfile!;
+    store.state = {
+      ...store.state,
+      profiles: store.state.profiles.map((item) =>
+        item.id === profile.id
+          ? { ...item, correctsUntilCoin: 1, coinAwardsUntilBonus: 1, coins: 0, coinsEarned: 0 }
+          : item,
+      ),
+    };
+    const { awardedCoin, awardedCoins } = store.record("right");
+    assert.equal(awardedCoin, true);
+    assert.equal(awardedCoins >= 2 && awardedCoins <= 5, true);
+    assert.equal(store.currentProfile?.coins, awardedCoins);
+    assert.equal(store.currentProfile?.coinsEarned, awardedCoins);
+    const nextBonus = store.currentProfile!.coinAwardsUntilBonus;
+    assert.equal(nextBonus >= 10 && nextBonus <= 15, true);
+  });
+
   it("counts a wrong answer as half a correct toward the next coin", () => {
     const store = new AppStore(memoryStorage());
     store.createFirstProfile("Ava", "words");

@@ -125,12 +125,12 @@ export class AppStore extends EventTarget {
     return true;
   }
 
-  record(result: ResultKind): { awardedCoin: boolean } {
+  record(result: ResultKind): { awardedCoin: boolean; awardedCoins: number } {
     const profile = this.currentProfile;
     const text = this.currentText;
-    if (!profile || !text) return { awardedCoin: false };
+    if (!profile || !text) return { awardedCoin: false, awardedCoins: 0 };
     let next = recordAndPickNext(profile, text, result, corpus);
-    let awardedCoin = false;
+    let awardedCoins = 0;
     const credit = result === "right" ? 1 : result === "wrong" ? 0.5 : 0;
     if (credit > 0) {
       let until = next.correctsUntilCoin;
@@ -139,19 +139,29 @@ export class AppStore extends EventTarget {
       }
       until -= credit;
       if (until <= 0) {
-        awardedCoin = true;
+        let untilBonus = next.coinAwardsUntilBonus;
+        if (untilBonus <= 0) {
+          untilBonus = defaultRng.int(10, 15);
+        }
+        untilBonus -= 1;
+        awardedCoins = 1;
+        if (untilBonus <= 0) {
+          awardedCoins = defaultRng.int(2, 5);
+          untilBonus = defaultRng.int(10, 15);
+        }
         next = {
           ...next,
-          coins: next.coins + 1,
-          coinsEarned: next.coinsEarned + 1,
+          coins: next.coins + awardedCoins,
+          coinsEarned: next.coinsEarned + awardedCoins,
           correctsUntilCoin: defaultRng.int(3, 6),
+          coinAwardsUntilBonus: untilBonus,
         };
       } else {
         next = { ...next, correctsUntilCoin: until };
       }
     }
     this.replaceProfile(next);
-    return { awardedCoin };
+    return { awardedCoin: awardedCoins > 0, awardedCoins };
   }
 
   buyItem(itemId: string): boolean {

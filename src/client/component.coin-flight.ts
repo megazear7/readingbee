@@ -1,10 +1,21 @@
 import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
+import { playCoinSound } from "./coin-sounds.js";
 
-type Coin = {
+type Flyer = {
+  delay: number;
+  duration: number;
+  originX: number;
+  originY: number;
+  controlX: number;
+  controlY: number;
+  targetX: number;
+  targetY: number;
   spin: number;
   vs: number;
   startR: number;
+  launched: boolean;
+  arrived: boolean;
 };
 
 type Sparkle = {
@@ -61,15 +72,14 @@ export class ReadingBeeCoinFlight extends LitElement {
   @property({ type: Number }) originY = 0;
   @property({ type: Number }) targetX = 0;
   @property({ type: Number }) targetY = 0;
+  @property({ type: Number }) count = 1;
   @query("canvas") private canvas!: HTMLCanvasElement;
   private frame = 0;
-  private coin: Coin | null = null;
+  private flyers: Flyer[] = [];
   private sparkles: Sparkle[] = [];
   private rings: Ring[] = [];
   private last = 0;
   private started = 0;
-  private controlX = 0;
-  private controlY = 0;
   private finished = false;
 
   override firstUpdated(): void {
@@ -85,8 +95,8 @@ export class ReadingBeeCoinFlight extends LitElement {
   }
 
   protected override updated(changed: PropertyValues<this>): void {
-    if (changed.has("originX") || changed.has("originY")) {
-      if (!this.coin && !this.finished) this.spawn();
+    if ((changed.has("originX") || changed.has("originY")) && this.flyers.length === 0 && !this.finished) {
+      this.spawn();
     }
   }
 
@@ -97,14 +107,29 @@ export class ReadingBeeCoinFlight extends LitElement {
   }
 
   private spawn(): void {
-    this.coin = {
-      spin: Math.random() * Math.PI * 2,
-      vs: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 8),
-      startR: 15 + Math.random() * 4,
-    };
-    this.controlX = (this.originX + this.targetX) / 2 + (Math.random() - 0.5) * 120;
-    this.controlY = Math.min(this.originY, this.targetY) - 40 - Math.random() * 50;
-    this.burst(this.originX, this.originY, 18, 0.28);
+    const n = Math.max(1, Math.round(this.count));
+    const stagger = n > 1 ? 0.08 : 0;
+    this.flyers = Array.from({ length: n }, (_, index) => {
+      const originX = this.originX + (Math.random() - 0.5) * 16;
+      const originY = this.originY + (Math.random() - 0.5) * 10;
+      const targetX = this.targetX + (Math.random() - 0.5) * 10;
+      const targetY = this.targetY + (Math.random() - 0.5) * 8;
+      return {
+        delay: index * stagger,
+        duration: ARRIVE_AT,
+        originX,
+        originY,
+        targetX,
+        targetY,
+        controlX: (originX + targetX) / 2 + (Math.random() - 0.5) * 120,
+        controlY: Math.min(originY, targetY) - 40 - Math.random() * 50,
+        spin: Math.random() * Math.PI * 2,
+        vs: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 8),
+        startR: 15 + Math.random() * 4,
+        launched: false,
+        arrived: false,
+      };
+    });
   }
 
   private burst(x: number, y: number, count: number, maxLife: number): void {
@@ -164,17 +189,29 @@ export class ReadingBeeCoinFlight extends LitElement {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const coin = this.coin;
-    if (coin && elapsed < ARRIVE_AT) {
-      const u = easeInOut(Math.min(1, elapsed / ARRIVE_AT));
-      const x = quad(this.originX, this.controlX, this.targetX, u);
-      const y = quad(this.originY, this.controlY, this.targetY, u);
-      coin.spin += coin.vs * dt;
-      const r = coin.startR * (1 - u * 0.48);
-      this.drawCoin(ctx, x, y, r, coin.spin);
-    } else if (coin) {
-      this.finishBurst(this.targetX, this.targetY);
-      this.coin = null;
+    for (const flyer of this.flyers) {
+      if (elapsed < flyer.delay) {
+        continue;
+      }
+      if (!flyer.launched) {
+        flyer.launched = true;
+        this.burst(flyer.originX, flyer.originY, 18, 0.28);
+        playCoinSound();
+      }
+      if (flyer.arrived) {
+        continue;
+      }
+      const local = elapsed - flyer.delay;
+      if (local >= flyer.duration) {
+        flyer.arrived = true;
+        this.finishBurst(flyer.targetX, flyer.targetY);
+        continue;
+      }
+      const u = easeInOut(Math.min(1, local / flyer.duration));
+      const x = quad(flyer.originX, flyer.controlX, flyer.targetX, u);
+      const y = quad(flyer.originY, flyer.controlY, flyer.targetY, u);
+      flyer.spin += flyer.vs * dt;
+      this.drawCoin(ctx, x, y, flyer.startR * (1 - u * 0.48), flyer.spin);
     }
 
     this.rings = this.rings.filter((ring) => ring.life < ring.maxLife);
@@ -194,7 +231,9 @@ export class ReadingBeeCoinFlight extends LitElement {
       this.drawSparkle(ctx, sparkle);
     }
 
-    if (elapsed >= DURATION) {
+    const last = this.flyers[this.flyers.length - 1];
+    const doneAt = (last ? last.delay + last.duration : ARRIVE_AT) + (DURATION - ARRIVE_AT);
+    if (elapsed >= doneAt) {
       if (!this.finished) {
         this.finished = true;
         this.dispatchEvent(new Event("done"));

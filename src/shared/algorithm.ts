@@ -152,6 +152,7 @@ export const createProfile = (
     coinsEarned: 0,
     inventory: [],
     correctsUntilCoin: 0,
+    coinAwardsUntilBonus: defaultRng.int(10, 15),
   };
 };
 

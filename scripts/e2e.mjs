@@ -125,7 +125,7 @@ try {
     ["reading-bee-reading", "shadow", ".prompt img.picture"],
     "return node.getAttribute('src');",
   );
-  if (!firstPicture || !firstPicture.startsWith("/letters/") || !firstPicture.endsWith(".webp")) {
+  if (!firstPicture || !firstPicture.startsWith("/letters/") || !firstPicture.endsWith(".png")) {
     throw new Error(`Expected a letter picture, got ${firstPicture}`);
   }
   const coinLabel = await textOf(page, ["reading-bee-reading", "shadow", "button.coins"]);

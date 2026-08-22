@@ -67,6 +67,7 @@ export const Profile = z.object({
   coinsEarned: z.number().int().nonnegative().default(0),
   inventory: z.array(z.string()).default([]),
   correctsUntilCoin: z.number().nonnegative().multipleOf(0.5).default(0),
+  coinAwardsUntilBonus: z.number().int().nonnegative().default(0),
 });
 export type Profile = z.infer<typeof Profile>;
 

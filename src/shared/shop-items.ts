@@ -9,7 +9,7 @@ const item = (id: string, name: string, cost: number): ShopItem => ({
   id,
   name,
   cost,
-  image: `/shop/${id}.webp`,
+  image: `/shop/${id}.png`,
 });
 
 export const SHOP_ITEMS: ShopItem[] = [

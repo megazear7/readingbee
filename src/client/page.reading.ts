@@ -9,6 +9,7 @@ import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { consumeAppUpdated } from "./sw-update.js";
+import { playCoinSounds } from "./coin-sounds.js";
 import "./component.coin-flight.js";
 import "./component.level-badge.js";
 import "./component.level-up.js";
@@ -477,6 +478,7 @@ export class ReadingBeeReading extends LitElement {
   @state() private badgeX = 0;
   @state() private badgeY = 0;
   @state() private flyingCoin = false;
+  @state() private flyingCoinCount = 1;
   @state() private coinOriginX = 0;
   @state() private coinOriginY = 0;
   @state() private coinTargetX = 0;
@@ -601,6 +603,7 @@ export class ReadingBeeReading extends LitElement {
                   .originY=${this.coinOriginY}
                   .targetX=${this.coinTargetX}
                   .targetY=${this.coinTargetY}
+                  .count=${this.flyingCoinCount}
                   @done=${this.onCoinDone}></reading-bee-coin-flight>
               `
             : ""
@@ -670,9 +673,9 @@ export class ReadingBeeReading extends LitElement {
     this.locked = true;
     this.outgoingPicture = pictureFor(current, appStore.currentProfile ?? undefined);
     this.outgoing = current;
-    const { awardedCoin } = appStore.record(result);
-    if (awardedCoin && !this.flyingCoin) {
-      this.startCoinFlight(event);
+    const { awardedCoins } = appStore.record(result);
+    if (awardedCoins > 0 && !this.flyingCoin) {
+      this.startCoinFlight(event, awardedCoins);
     }
     const nextLevel = appStore.currentProfile?.level ?? 0;
     this.pendingLevelUp = nextLevel > previousLevel ? nextLevel : 0;
@@ -704,8 +707,10 @@ export class ReadingBeeReading extends LitElement {
     this.locked = false;
   };
 
-  private startCoinFlight(event?: Event): void {
+  private startCoinFlight(event: Event | undefined, count: number): void {
+    this.flyingCoinCount = Math.max(1, count);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      playCoinSounds(this.flyingCoinCount);
       return;
     }
     const source =
