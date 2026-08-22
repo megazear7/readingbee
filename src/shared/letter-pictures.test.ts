@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyResult, createProfile } from "./algorithm.js";
+import { createProfile, recordAndPickNext } from "./algorithm.js";
 import { corpus } from "./corpus.js";
-import { LETTER_PICTURES, PICTURE_HIDE_STREAK, PICTURE_REFRESH_STREAK, pictureFor } from "./letter-pictures.js";
+import {
+  LETTER_PICTURES,
+  PICTURE_HIDE_STREAK,
+  PICTURE_MEMORY_AFTER_MS,
+  PICTURE_MEMORY_SHOWS,
+  PICTURE_PERMANENT_STREAK,
+  PICTURE_REFRESH_STREAK,
+  pictureFor,
+} from "./letter-pictures.js";
 import { ReadingText } from "./type.app.js";
 
 const letter = (text: string, level = 1): ReadingText => ({
@@ -12,8 +20,12 @@ const letter = (text: string, level = 1): ReadingText => ({
   kind: "letter",
 });
 
-const mark = (profile: ReturnType<typeof createProfile>, text: ReadingText, result: "right" | "wrong" | "wayTooEasy") =>
-  applyResult(profile, text, result);
+const mark = (
+  profile: ReturnType<typeof createProfile>,
+  text: ReadingText,
+  result: "right" | "wrong" | "wayTooEasy",
+  at = new Date(),
+) => recordAndPickNext(profile, text, result, corpus, undefined, at);
 
 describe("pictureFor", () => {
   it("has a picture for every single letter except isolated q", () => {
@@ -97,6 +109,40 @@ describe("pictureFor", () => {
     }
     profile = mark(profile, a, "right");
     assert.equal(pictureFor(a, profile), undefined);
+  });
+
+  it("shows the picture three times after an hour away, then hides until another hour", () => {
+    let profile = createProfile("Ava", "letters", []);
+    const a = letter("a");
+    let at = new Date("2026-08-22T10:00:00.000Z");
+    for (let i = 0; i < PICTURE_HIDE_STREAK; i += 1) {
+      profile = mark(profile, a, "right", at);
+      at = new Date(at.getTime() + 60_000);
+    }
+    assert.equal(pictureFor(a, profile, at), undefined);
+
+    at = new Date(at.getTime() + PICTURE_MEMORY_AFTER_MS);
+    for (let i = 0; i < PICTURE_MEMORY_SHOWS; i += 1) {
+      assert.equal(pictureFor(a, profile, at), LETTER_PICTURES.a, `refresh show ${i + 1}`);
+      profile = mark(profile, a, "right", at);
+      at = new Date(at.getTime() + 60_000);
+    }
+    assert.equal(pictureFor(a, profile, at), undefined);
+
+    at = new Date(at.getTime() + PICTURE_MEMORY_AFTER_MS);
+    assert.equal(pictureFor(a, profile, at), LETTER_PICTURES.a);
+  });
+
+  it("stops showing the picture permanently after 30 correct in a row", () => {
+    let profile = createProfile("Ava", "letters", []);
+    const a = letter("a");
+    let at = new Date("2026-08-22T08:00:00.000Z");
+    for (let i = 0; i < PICTURE_PERMANENT_STREAK; i += 1) {
+      profile = mark(profile, a, "right", at);
+      at = new Date(at.getTime() + 30_000);
+    }
+    assert.equal(pictureFor(a, profile, at), undefined);
+    assert.equal(pictureFor(a, profile, new Date(at.getTime() + PICTURE_MEMORY_AFTER_MS * 5)), undefined);
   });
 
   it("hides pictures once the text is past the letter levels", () => {
