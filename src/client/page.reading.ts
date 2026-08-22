@@ -479,6 +479,7 @@ export class ReadingBeeReading extends LitElement {
   @state() private badgeY = 0;
   @state() private flyingCoin = false;
   @state() private flyingCoinCount = 1;
+  @state() private pendingEarn = 0;
   @state() private coinOriginX = 0;
   @state() private coinOriginY = 0;
   @state() private coinTargetX = 0;
@@ -547,7 +548,7 @@ export class ReadingBeeReading extends LitElement {
             <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
             <button class="coins" aria-label="Shop" @click=${() => navigate("shop")}>
               <span class="coin-dot"></span>
-              ${profile.coins}
+              ${Math.max(0, profile.coins - this.pendingEarn)}
             </button>
             <reading-bee-profile-modal>
               <button
@@ -604,6 +605,7 @@ export class ReadingBeeReading extends LitElement {
                   .targetX=${this.coinTargetX}
                   .targetY=${this.coinTargetY}
                   .count=${this.flyingCoinCount}
+                  @coin-landed=${this.onCoinLanded}
                   @done=${this.onCoinDone}></reading-bee-coin-flight>
               `
             : ""
@@ -713,6 +715,7 @@ export class ReadingBeeReading extends LitElement {
       playCoinSounds(this.flyingCoinCount);
       return;
     }
+    this.pendingEarn = this.flyingCoinCount;
     const source =
       event?.currentTarget instanceof HTMLElement
         ? event.currentTarget
@@ -734,8 +737,13 @@ export class ReadingBeeReading extends LitElement {
     this.flyingCoin = true;
   }
 
+  private onCoinLanded = (): void => {
+    this.pendingEarn = Math.max(0, this.pendingEarn - 1);
+  };
+
   private onCoinDone = (): void => {
     this.flyingCoin = false;
+    this.pendingEarn = 0;
   };
 
   private spawnRipple(kind: "yes" | "no", event?: Event): void {

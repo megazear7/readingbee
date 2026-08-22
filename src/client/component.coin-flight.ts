@@ -205,6 +205,7 @@ export class ReadingBeeCoinFlight extends LitElement {
         flyer.arrived = true;
         this.finishBurst(flyer.targetX, flyer.targetY);
         playCoinSound();
+        this.dispatchEvent(new CustomEvent("coin-landed", { bubbles: true, composed: true }));
         continue;
       }
       const u = easeInOut(Math.min(1, local / flyer.duration));
