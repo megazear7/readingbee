@@ -29,13 +29,12 @@ export class ReadingBeeLevelUp extends LitElement {
         inset: 0;
         z-index: 20;
         display: block;
-        pointer-events: auto;
+        pointer-events: none;
       }
 
       .overlay {
         position: absolute;
         inset: 0;
-        cursor: pointer;
       }
 
       canvas {
@@ -50,7 +49,8 @@ export class ReadingBeeLevelUp extends LitElement {
         top: 46%;
         transform: translate(-50%, -50%);
         text-align: center;
-        pointer-events: none;
+        pointer-events: auto;
+        cursor: pointer;
         animation: popIn 720ms cubic-bezier(0.16, 1.2, 0.32, 1) both;
       }
 
@@ -137,9 +137,9 @@ export class ReadingBeeLevelUp extends LitElement {
 
   override render(): TemplateResult {
     return html`
-      <div class="overlay" @click=${this.close}>
+      <div class="overlay">
         <canvas aria-hidden="true"></canvas>
-        <div class="copy">
+        <div class="copy" @click=${this.close}>
           <p class="kicker">Level up</p>
           <p class="level">${this.level}</p>
           <p class="hint">Tap to continue</p>

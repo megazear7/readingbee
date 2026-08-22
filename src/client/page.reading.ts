@@ -27,7 +27,8 @@ export class ReadingBeeReading extends LitElement {
         overflow: hidden;
       }
 
-      .screen.is-celebrating header {
+      .screen.is-celebrating header,
+      .screen.is-celebrating footer {
         pointer-events: none;
       }
 
@@ -391,12 +392,18 @@ export class ReadingBeeReading extends LitElement {
           0 10px 30px rgba(90, 166, 232, 0.08);
       }
 
-      .score-btn:hover {
+      .score-btn:hover:not(:disabled) {
         transform: translateY(-2px) scale(1.02);
       }
 
-      .score-btn:active {
+      .score-btn:active:not(:disabled) {
         transform: scale(0.96);
+      }
+
+      .score-btn:disabled {
+        opacity: 0.38;
+        transform: none;
+        cursor: default;
       }
 
       .score-btn svg {
@@ -417,8 +424,13 @@ export class ReadingBeeReading extends LitElement {
           color var(--time-normal) ease;
       }
 
-      .muted:hover {
+      .muted:hover:not(:disabled) {
         opacity: 0.9;
+      }
+
+      .muted:disabled {
+        opacity: 0.28;
+        cursor: default;
       }
 
       .ripple {
@@ -492,7 +504,7 @@ export class ReadingBeeReading extends LitElement {
   @state() private appUpdated = false;
   @state() private updateChipLeaving = false;
   @state() private tipsDismissed = false;
-  private locked = false;
+  @state() private locked = false;
   private pendingLevelUp = 0;
   private rippleSeq = 0;
 
@@ -575,24 +587,28 @@ export class ReadingBeeReading extends LitElement {
               <button
                 class="score-btn yes"
                 aria-label="Mastered this one"
+                ?disabled=${this.actionsLocked}
                 @click=${(event: Event) => this.record("right", event)}>
                 ${checkIcon}
               </button>
               <span class="tip" role="tooltip">Mastered this one</span>
             </div>
-            <button class="muted" @click=${() => this.record("wayTooEasy")}>Way too easy</button>
+            <button class="muted" ?disabled=${this.actionsLocked} @click=${() => this.record("wayTooEasy")}>
+              Way too easy
+            </button>
           </div>
           <div class="action">
             <div class="tip-wrap ${this.tipsDismissed ? "is-dismissed" : ""}" @pointerleave=${this.restoreTipsOnLeave}>
               <button
                 class="score-btn no"
                 aria-label="Needs more practice"
+                ?disabled=${this.actionsLocked}
                 @click=${(event: Event) => this.record("wrong", event)}>
                 ${raindropIcon}
               </button>
               <span class="tip" role="tooltip">Needs more practice</span>
             </div>
-            <button class="muted" @click=${() => this.record("skip")}>Skip</button>
+            <button class="muted" ?disabled=${this.actionsLocked} @click=${() => this.record("skip")}>Skip</button>
           </div>
         </footer>
         ${this.ripples.map(
@@ -659,6 +675,10 @@ export class ReadingBeeReading extends LitElement {
     }
     this.tipsDismissed = false;
   };
+
+  private get actionsLocked(): boolean {
+    return this.locked || this.celebrating || this.holdingIncoming || this.incomingEnter;
+  }
 
   private dismissTips(event?: Event): void {
     this.tipsDismissed = true;
