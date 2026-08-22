@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createProfile } from "./algorithm.js";
+import { applyResult, createProfile } from "./algorithm.js";
 import { corpus } from "./corpus.js";
-import { LETTER_PICTURES, pictureFor } from "./letter-pictures.js";
-import { emptyTextStat, ReadingText } from "./type.app.js";
+import { LETTER_PICTURES, PICTURE_HIDE_STREAK, pictureFor } from "./letter-pictures.js";
+import { ReadingText } from "./type.app.js";
 
 const letter = (text: string, level = 1): ReadingText => ({
   id: `l-${text}`,
@@ -11,6 +11,9 @@ const letter = (text: string, level = 1): ReadingText => ({
   level,
   kind: "letter",
 });
+
+const mark = (profile: ReturnType<typeof createProfile>, text: ReadingText, result: "right" | "wrong" | "wayTooEasy") =>
+  applyResult(profile, text, result);
 
 describe("pictureFor", () => {
   it("has a picture for every single letter except isolated q", () => {
@@ -34,45 +37,62 @@ describe("pictureFor", () => {
     assert.equal(pictureFor(letter("sh", 4)), "/letters/ship.png");
   });
 
-  it("hides pictures once the student has mastered the sound", () => {
-    const profile = createProfile("Ava", "letters", []);
+  it("keeps the picture until the letter is correct 6 times in a row", () => {
+    let profile = createProfile("Ava", "letters", []);
     const a = letter("a");
     assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
-    profile.textStats[a.id] = { ...emptyTextStat(a.id), correct: 1 };
-    profile.events.push({
-      id: "e1",
-      textId: a.id,
-      text: a.text,
-      level: a.level,
-      result: "right",
-      at: new Date().toISOString(),
-    });
+    for (let i = 0; i < PICTURE_HIDE_STREAK - 1; i += 1) {
+      profile = mark(profile, a, "right");
+      assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+    }
+    profile = mark(profile, a, "right");
+    assert.equal(pictureFor(a, profile), undefined);
+  });
+
+  it("resets the first-learning streak after a miss", () => {
+    let profile = createProfile("Ava", "letters", []);
+    const a = letter("a");
+    for (let i = 0; i < PICTURE_HIDE_STREAK - 1; i += 1) {
+      profile = mark(profile, a, "right");
+    }
+    profile = mark(profile, a, "wrong");
+    assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+    for (let i = 0; i < PICTURE_HIDE_STREAK - 1; i += 1) {
+      profile = mark(profile, a, "right");
+      assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+    }
+    profile = mark(profile, a, "right");
+    assert.equal(pictureFor(a, profile), undefined);
+  });
+
+  it("hides the picture immediately when the letter is way too easy", () => {
+    let profile = createProfile("Ava", "letters", []);
+    const a = letter("a");
+    profile = mark(profile, a, "wayTooEasy");
     assert.equal(pictureFor(a, profile), undefined);
   });
 
   it("brings the picture back after a mastered letter is missed", () => {
-    const profile = createProfile("Ava", "letters", []);
+    let profile = createProfile("Ava", "letters", []);
     const a = letter("a");
-    profile.textStats[a.id] = { ...emptyTextStat(a.id), correct: 1, wrong: 1 };
-    profile.events.push(
-      {
-        id: "e1",
-        textId: a.id,
-        text: a.text,
-        level: a.level,
-        result: "right",
-        at: new Date().toISOString(),
-      },
-      {
-        id: "e2",
-        textId: a.id,
-        text: a.text,
-        level: a.level,
-        result: "wrong",
-        at: new Date().toISOString(),
-      },
-    );
+    for (let i = 0; i < PICTURE_HIDE_STREAK; i += 1) {
+      profile = mark(profile, a, "right");
+    }
+    assert.equal(pictureFor(a, profile), undefined);
+    profile = mark(profile, a, "wrong");
     assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+  });
+
+  it("hides the picture again after one correct once it has already been removed", () => {
+    let profile = createProfile("Ava", "letters", []);
+    const a = letter("a");
+    for (let i = 0; i < PICTURE_HIDE_STREAK; i += 1) {
+      profile = mark(profile, a, "right");
+    }
+    profile = mark(profile, a, "wrong");
+    assert.equal(pictureFor(a, profile), LETTER_PICTURES.a);
+    profile = mark(profile, a, "right");
+    assert.equal(pictureFor(a, profile), undefined);
   });
 
   it("hides pictures once the text is past the letter levels", () => {
