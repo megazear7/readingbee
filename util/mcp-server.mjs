@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFile, mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -8,6 +8,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(ROOT, "..");
 loadEnv({ path: join(ROOT, ".env") });
 const REFERENCE_IMAGE = join(ROOT, "reference", "apple.png");
 const OUTPUT_DIR = join(ROOT, "output");
@@ -59,6 +60,18 @@ const editImage = async (prompt, { transparent = true } = {}) => {
   return b64;
 };
 
+const resolveDestination = (destination) => {
+  if (!destination) {
+    return null;
+  }
+  const target = resolve(REPO_ROOT, destination);
+  const rel = relative(REPO_ROOT, target);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error("destination must be a path inside the repository");
+  }
+  return target;
+};
+
 const generateImage = async (description) => {
   const prompt = promptFor(description);
   try {
@@ -80,17 +93,27 @@ server.registerTool(
   "make_image",
   {
     title: "Make image",
-    description: "Generate an image from a short description.",
+    description:
+      "Generate an image from a short description. Optionally save it to a path relative to the repository root.",
     inputSchema: {
       description: z.string().min(1).describe("What the image should show"),
+      destination: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("Optional path relative to the repository root where the PNG should be written"),
     },
   },
-  async ({ description }) => {
+  async ({ description, destination }) => {
     try {
       const b64 = await generateImage(description);
-      await mkdir(OUTPUT_DIR, { recursive: true });
-      const filename = `image-${Date.now()}.png`;
-      const outputPath = join(OUTPUT_DIR, filename);
+      let outputPath = resolveDestination(destination);
+      if (!outputPath) {
+        await mkdir(OUTPUT_DIR, { recursive: true });
+        outputPath = join(OUTPUT_DIR, `image-${Date.now()}.png`);
+      } else {
+        await mkdir(dirname(outputPath), { recursive: true });
+      }
       await writeFile(outputPath, Buffer.from(b64, "base64"));
       return {
         content: [

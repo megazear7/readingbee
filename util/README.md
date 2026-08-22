@@ -1,8 +1,8 @@
 # Reading Bee OpenAI MCP
 
-Local MCP server that proxies image generation to OpenAI. Callers only pass a
-`description`. The apple reference image and style prompt are applied inside
-the tool.
+Local MCP server that proxies image generation to OpenAI. Callers pass a
+`description` and an optional `destination` path. The apple reference image and
+style prompt are applied inside the tool.
 
 ## Setup
 
@@ -36,5 +36,6 @@ command = "node"
 args = ["util/mcp-server.mjs"]
 ```
 
-The server loads `util/.env` automatically. Generated PNGs are written to
-`util/output/`.
+The server loads `util/.env` automatically. If `destination` is omitted, PNGs
+are written to `util/output/`. If `destination` is set, it is resolved from the
+repository root, for example `src/static/letters/bat.png`.
