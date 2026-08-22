@@ -45,19 +45,33 @@ export class ReadingBeeModal extends LitElement {
       }
 
       .modal-body {
-        padding: 0 1.4rem 1.4rem;
+        padding: 0.35rem 1.4rem 1.4rem;
         overflow-y: auto;
       }
 
       .modal-header {
         display: flex;
-        justify-content: flex-end;
-        padding: 0.7rem 0.7rem 0;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 0.7rem 0.35rem 1.4rem;
+      }
+
+      .modal-title {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .modal-header ::slotted(h2) {
+        margin: 0;
+        font-size: 1.25rem;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
       }
 
       .close-button {
         width: 40px;
         height: 40px;
+        flex: 0 0 auto;
         border-radius: 50%;
         color: var(--color-primary-text-muted);
         display: grid;
@@ -111,6 +125,9 @@ export class ReadingBeeModal extends LitElement {
       <div class="${this.backdropClasses()}" @click=${this.closeHandler()}>
         <div class="modal-content" @click=${stopProp}>
           <div class="modal-header">
+            <div class="modal-title">
+              <slot name="title"></slot>
+            </div>
             <button class="close-button" aria-label="Close" @click=${this.closeHandler()}>${xIcon}</button>
           </div>
           <div class="modal-body">

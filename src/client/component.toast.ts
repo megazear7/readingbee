@@ -23,7 +23,9 @@ export class ReadingBeeToast extends LitElement {
         width: min(calc(100vw - 2rem), 380px);
         padding: 0.85rem 0.85rem 0.85rem 1rem;
         border-radius: 16px;
-        background: #1a1713;
+        background: rgba(26, 23, 19, 0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         color: var(--color-primary-text);
         font-size: 0.95rem;
         line-height: 1.35;
@@ -57,17 +59,23 @@ export class ReadingBeeToast extends LitElement {
 
       :host([type="error"]) {
         border-left-color: var(--color-error);
-        background: linear-gradient(90deg, rgba(232, 93, 76, 0.14), #1a1713 28%);
+        background:
+          linear-gradient(90deg, rgba(232, 93, 76, 0.34), transparent 38%),
+          rgba(26, 23, 19, 0.92);
       }
 
       :host([type="warning"]) {
         border-left-color: var(--color-warning);
-        background: linear-gradient(90deg, rgba(240, 195, 106, 0.16), #1a1713 28%);
+        background:
+          linear-gradient(90deg, rgba(240, 195, 106, 0.34), transparent 38%),
+          rgba(26, 23, 19, 0.92);
       }
 
       :host([type="success"]) {
         border-left-color: var(--color-success);
-        background: linear-gradient(90deg, rgba(125, 206, 130, 0.16), #1a1713 28%);
+        background:
+          linear-gradient(90deg, rgba(125, 206, 130, 0.34), transparent 38%),
+          rgba(26, 23, 19, 0.92);
       }
 
       :host([type="info"]) {

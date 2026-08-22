@@ -44,6 +44,10 @@ export class ReadingBeeImportProfile extends LitElement {
         font-size: 0.95rem;
       }
 
+      h2[slot="title"] {
+        margin: 0;
+      }
+
       .confirm {
         display: grid;
         gap: 0.8rem;
@@ -67,6 +71,13 @@ export class ReadingBeeImportProfile extends LitElement {
   override render(): TemplateResult {
     return html`
       <reading-bee-modal @ModelClosing=${this.onClose}>
+        ${
+          this.pending
+            ? html`
+                <h2 slot="title">Add ${this.pending.name}?</h2>
+              `
+            : ""
+        }
         <div slot="body">${this.body()}</div>
       </reading-bee-modal>
     `;
@@ -80,7 +91,6 @@ export class ReadingBeeImportProfile extends LitElement {
     const band = READING_BANDS.find((item) => item.id === profile.band);
     return html`
       <div class="confirm">
-        <h2>Add ${profile.name}?</h2>
         <p>This will add their profile and reading history to this device.</p>
         <div class="preview">
           <div class="avatar" style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}>

@@ -77,7 +77,11 @@ export class ReadingBeeSettings extends LitElement {
       }
 
       h2 {
-        margin-top: 1.6rem;
+        margin-top: 2.25rem;
+      }
+
+      h2[slot="title"] {
+        margin: 0;
       }
 
       .top-actions {
@@ -321,11 +325,11 @@ export class ReadingBeeSettings extends LitElement {
       }
 
       .picker-title {
-        margin: 0 0 0.8rem;
+        margin: 0;
       }
 
       .danger {
-        margin-top: 1.6rem;
+        margin-top: 2.5rem;
         padding: 1rem;
         border-radius: 18px;
         border: 1px solid rgba(232, 93, 76, 0.35);
@@ -440,15 +444,31 @@ export class ReadingBeeSettings extends LitElement {
           <reading-bee-instructor-gate>${this.settingsView()}</reading-bee-instructor-gate>
         </div>
         <reading-bee-modal class="color-modal" @ModelClosing=${this.closeColorPicker}>
+          <h2 slot="title" class="picker-title">Choose a color</h2>
           <div slot="body">${this.colorPickerBody()}</div>
         </reading-bee-modal>
         <reading-bee-modal class="delete-modal" @ModelClosing=${this.closeDelete}>
+          ${
+            this.pendingDeleteName
+              ? html`
+                  <h2 slot="title">Delete ${this.pendingDeleteName}?</h2>
+                `
+              : ""
+          }
           <div slot="body">${this.deleteBody()}</div>
         </reading-bee-modal>
         <reading-bee-modal class="share-modal" @ModelClosing=${this.closeShare}>
+          ${
+            this.shareProfileName
+              ? html`
+                  <h2 slot="title">Share ${this.shareProfileName}</h2>
+                `
+              : ""
+          }
           <div slot="body">${this.shareBody()}</div>
         </reading-bee-modal>
         <reading-bee-modal class="level-modal" @ModelClosing=${this.closeLevel}>
+          <h2 slot="title">Set exact level</h2>
           <div slot="body">${this.levelBody()}</div>
         </reading-bee-modal>
       </div>
@@ -456,6 +476,12 @@ export class ReadingBeeSettings extends LitElement {
   }
 
   private close = (): void => {
+    if (this.updatingPasscode) {
+      this.updatingPasscode = false;
+      this.passcodeStep = "current";
+      this.nextPasscode = "";
+      return;
+    }
     navigate("reading");
   };
 
@@ -558,7 +584,6 @@ export class ReadingBeeSettings extends LitElement {
       return html``;
     }
     return html`
-      <h2 class="picker-title">Choose a color</h2>
       <div class="pairs">
         ${COLOR_PAIRS.map(
           (pair, index) => html`
@@ -583,7 +608,6 @@ export class ReadingBeeSettings extends LitElement {
     const picture = sample ? pictureFor(sample) : undefined;
     return html`
       <div class="level-form">
-        <h2 class="picker-title">Set exact level</h2>
         <p>Choose a level from ${MIN_LEVEL} to ${MAX_LEVEL} for ${profile.name}.</p>
         <div class="level-controls">
           <input
@@ -629,7 +653,6 @@ export class ReadingBeeSettings extends LitElement {
     const nativeShare = shouldNativeShare();
     return html`
       <div class="confirm">
-        <h2>Share ${name}</h2>
         <p>
           Send a link to a parent, teacher, or another device. When they open it, Reading Bee will ask if they want to
           add ${name}'s profile and reading history.
@@ -650,7 +673,6 @@ export class ReadingBeeSettings extends LitElement {
     }
     return html`
       <div class="confirm">
-        <h2>Delete ${this.pendingDeleteName}?</h2>
         <p>This will permanently remove this profile and their reading history. This cannot be undone.</p>
         <div class="confirm-row">
           <button class="ghost-btn" @click=${() => this.deleteModal.close()}>Cancel</button>

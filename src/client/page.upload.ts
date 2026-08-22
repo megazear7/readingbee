@@ -139,6 +139,10 @@ export class ReadingBeeUpload extends LitElement {
         display: none;
       }
 
+      h2[slot="title"] {
+        margin: 0;
+      }
+
       .confirm {
         display: grid;
         gap: 0.9rem;
@@ -208,8 +212,8 @@ export class ReadingBeeUpload extends LitElement {
           </reading-bee-instructor-gate>
         </div>
         <reading-bee-modal>
+          <h2 slot="title">Replace all app data?</h2>
           <div slot="body" class="confirm">
-            <h2>Replace all app data?</h2>
             <p>
               This will permanently replace every profile, result, and setting on this device with the uploaded backup.
               This cannot be undone.
