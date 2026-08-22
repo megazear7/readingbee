@@ -9,7 +9,13 @@ the tool.
 ```sh
 cd util
 npm install
-export OPENAI_API_KEY=sk-...
+cp .env.example .env
+```
+
+Put your key in `util/.env` (gitignored):
+
+```
+OPENAI_API_KEY=sk-your-key-here
 ```
 
 The reference image lives at `util/reference/apple.png`.
@@ -30,5 +36,5 @@ command = "node"
 args = ["util/mcp-server.mjs"]
 ```
 
-Set `OPENAI_API_KEY` in the environment. Generated PNGs are written to
+The server loads `util/.env` automatically. Generated PNGs are written to
 `util/output/`.
