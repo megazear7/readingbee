@@ -225,7 +225,31 @@ try {
     return !pad && Boolean(card);
   });
 
-  await click(page, ["reading-bee-settings", "shadow", "button.instructions"]);
+  await withPage(page, ["reading-bee-settings", "shadow", "button.identity"], "node.scrollIntoView(); node.click();");
+  await page.waitForFunction(() => window.location.pathname.includes("/settings/profile/"), { timeout: 8000 });
+  await page.waitForSelector("reading-bee-edit-profile", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const root = document.querySelector("reading-bee-edit-profile")?.shadowRoot;
+    const text = root?.textContent ?? "";
+    return text.includes("Next level") && text.includes("Right in a row");
+  });
+  const teacherView = await textOf(page, ["reading-bee-edit-profile", "shadow", ".body"]);
+  if (!teacherView.includes("Next level") || !teacherView.includes("Right in a row")) {
+    throw new Error(`Teacher view missing progress, got ${teacherView.slice(0, 180)}`);
+  }
+  await withPage(page, ["reading-bee-edit-profile", "shadow", "button.back"], "node.click();");
+  await page.waitForFunction(() => window.location.pathname === "/settings", { timeout: 8000 });
+  await page.waitForSelector("reading-bee-settings", { timeout: 10000 });
+  await page.waitForFunction(() => {
+    return Boolean(document.querySelector("reading-bee-settings")?.shadowRoot?.querySelector("button.instructions"));
+  });
+
+  await withPage(
+    page,
+    ["reading-bee-settings", "shadow", "button.instructions"],
+    "node.scrollIntoView(); node.click();",
+  );
+  await page.waitForFunction(() => window.location.pathname === "/settings/instructions", { timeout: 8000 });
   await page.waitForSelector("reading-bee-instructions", { timeout: 10000 });
   const instructions = await textOf(page, ["reading-bee-instructions", "shadow", ".body"]);
   if (!instructions.includes("left arrow") || !instructions.includes("green check")) {

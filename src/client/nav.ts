@@ -33,4 +33,5 @@ export const navigate = (view: AppView, id?: string): void => {
     window.history.pushState({ view }, "", path);
   }
   window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo(0, 0);
 };

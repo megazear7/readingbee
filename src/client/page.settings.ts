@@ -1,6 +1,7 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { avatarStyle, COLOR_PAIRS, profileInitial } from "../shared/colors.js";
+import { teacherSnapshot } from "../shared/teacher.js";
 import { sampleTextAtLevel } from "../shared/corpus.js";
 import { pictureFor } from "../shared/letter-pictures.js";
 import { shareAppLink, shareProfileLink, shouldNativeShare } from "../shared/profile-share.js";
@@ -10,7 +11,7 @@ import { ReadingBeePasscode } from "./component.passcode.js";
 import { StoreController } from "./controller.store.js";
 import { SuccessEvent } from "./event.success.js";
 import { WarningEvent } from "./event.warning.js";
-import { backIcon, downloadIcon, lockIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
+import { backIcon, chevronIcon, downloadIcon, lockIcon, shareIcon, trashIcon, uploadIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
@@ -102,6 +103,25 @@ export class ReadingBeeSettings extends LitElement {
         display: grid;
         gap: 0.7rem;
         min-width: 0;
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        transition:
+          border-color var(--time-normal) ease,
+          transform var(--time-normal) ease,
+          background var(--time-normal) ease;
+      }
+
+      .profile-card:hover {
+        border-color: var(--color-1);
+        background: #221e18;
+        transform: translateY(-1px);
+      }
+
+      .profile-card:focus-visible {
+        outline: none;
+        border-color: var(--color-1);
+        box-shadow: 0 0 0 3px rgba(232, 184, 74, 0.18);
       }
 
       .profile-top {
@@ -135,43 +155,60 @@ export class ReadingBeeSettings extends LitElement {
         box-shadow: 0 0 0 3px var(--color-1);
       }
 
-      .grow {
+      .identity {
         flex: 1;
         min-width: 0;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 0.45rem;
+        text-align: left;
+        background: none;
+        border: 0;
+        padding: 0.1rem 0;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        border-radius: 12px;
       }
 
-      .name-btn {
-        flex: 1;
+      .identity:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(232, 184, 74, 0.28);
+      }
+
+      .who {
         min-width: 0;
-        min-height: 42px;
-        padding: 0.45rem 0.85rem;
-        border-radius: 14px;
-        background: #221e18;
-        border: 1px solid var(--color-panel-border);
-        text-align: left;
-        font: inherit;
-        color: inherit;
+        display: grid;
+        gap: 0.12rem;
+      }
+
+      .identity strong {
+        font-size: 1.02rem;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
-      .name-btn:hover {
-        border-color: var(--color-1);
+      .identity small {
+        color: var(--color-primary-text-muted);
+        font-size: 0.78rem;
+        line-height: 1.25;
       }
 
-      .name-input {
-        display: none;
+      .chevron {
+        color: var(--color-primary-text-muted);
+        display: grid;
+        place-items: center;
+        transition:
+          color var(--time-normal) ease,
+          transform var(--time-normal) ease;
       }
 
-      @media (min-width: 720px) {
-        .name-btn {
-          display: none;
-        }
-
-        .name-input {
-          display: block;
-        }
+      .profile-card:hover .chevron,
+      .identity:hover .chevron {
+        color: var(--color-1);
+        transform: translateX(2px);
       }
 
       .level {
@@ -547,35 +584,55 @@ export class ReadingBeeSettings extends LitElement {
   }
 
   private profileCard(profile: Profile): TemplateResult {
+    const snap = teacherSnapshot(profile, appStore.state.currentProfileId);
     return html`
-      <div class="profile-card">
+      <div class="profile-card" @click=${() => this.openTeacher(profile.id)}>
         <div class="profile-top">
           <button
             class="swatch"
             aria-label="Change color"
             style=${avatarStyle(profile.primaryColor, profile.secondaryColor)}
-            @click=${() => this.openColorPicker(profile.id)}>
+            @click=${(event: Event) => this.openColorPicker(profile.id, event)}>
             ${profileInitial(profile.name)}
           </button>
-          <button class="name-btn" @click=${() => navigate("edit-profile", profile.id)}>${profile.name}</button>
-          <input
-            class="grow name-input"
-            .value=${profile.name}
-            @change=${(event: Event) => this.rename(profile.id, event)} />
+          <button
+            class="identity"
+            aria-label="Teacher view for ${profile.name}"
+            @click=${(event: Event) => this.openTeacher(profile.id, event)}>
+            <span class="who">
+              <strong>${profile.name}</strong>
+              <small>${snap.headline}</small>
+            </span>
+            <span class="chevron">${chevronIcon}</span>
+          </button>
           <div class="level-wrap">
-            <button class="level" aria-label="Set exact level" @click=${() => this.openLevel(profile.id)}>
+            <button
+              class="level"
+              aria-label="Set exact level"
+              @click=${(event: Event) => this.openLevel(profile.id, event)}>
               Lv ${profile.level}
             </button>
           </div>
-          <button class="muted-btn icon-share" aria-label="Share profile" @click=${() => this.openShare(profile.id)}>
+          <button
+            class="muted-btn icon-share"
+            aria-label="Share profile"
+            @click=${(event: Event) => this.openShare(profile.id, event)}>
             ${shareIcon}
           </button>
-          <button class="muted-btn icon-delete" aria-label="Remove profile" @click=${() => this.openDelete(profile.id)}>
+          <button
+            class="muted-btn icon-delete"
+            aria-label="Remove profile"
+            @click=${(event: Event) => this.openDelete(profile.id, event)}>
             ${trashIcon}
           </button>
         </div>
       </div>
     `;
+  }
+
+  private openTeacher(profileId: string, event?: Event): void {
+    event?.stopPropagation();
+    navigate("edit-profile", profileId);
   }
 
   private colorPickerBody(): TemplateResult {
@@ -682,7 +739,8 @@ export class ReadingBeeSettings extends LitElement {
     `;
   }
 
-  private openColorPicker(profileId: string): void {
+  private openColorPicker(profileId: string, event?: Event): void {
+    event?.stopPropagation();
     this.colorPickerProfileId = profileId;
     void this.colorModal.open();
   }
@@ -691,7 +749,8 @@ export class ReadingBeeSettings extends LitElement {
     this.colorPickerProfileId = null;
   };
 
-  private openLevel(profileId: string): void {
+  private openLevel(profileId: string, event?: Event): void {
+    event?.stopPropagation();
     const profile = appStore.state.profiles.find((item) => item.id === profileId);
     if (!profile) return;
     this.levelProfileId = profile.id;
@@ -717,7 +776,8 @@ export class ReadingBeeSettings extends LitElement {
     dispatch(this, SuccessEvent("Level updated"));
   };
 
-  private openDelete(profileId: string): void {
+  private openDelete(profileId: string, event?: Event): void {
+    event?.stopPropagation();
     const profile = appStore.state.profiles.find((item) => item.id === profileId);
     if (!profile) return;
     this.pendingDeleteId = profile.id;
@@ -798,11 +858,8 @@ export class ReadingBeeSettings extends LitElement {
     dispatch(this, SuccessEvent("Profile removed"));
   }
 
-  private rename(id: string, event: Event): void {
-    appStore.renameProfile(id, (event.target as HTMLInputElement).value);
-  }
-
-  private openShare(profileId: string): void {
+  private openShare(profileId: string, event?: Event): void {
+    event?.stopPropagation();
     const profile = appStore.state.profiles.find((item) => item.id === profileId);
     if (!profile) return;
     this.shareProfileId = profile.id;
