@@ -14,6 +14,7 @@ loadEnv({ path: join(ROOT, ".env") });
 const REFERENCE_IMAGE = join(ROOT, "reference", "apple.png");
 const OUTPUT_DIR = join(ROOT, "output");
 const MODEL = "gpt-image-2-2026-04-21";
+const MODEL_FALLBACK = "gpt-image-2";
 const OPENAI_EDITS_URL = "https://api.openai.com/v1/images/edits";
 
 const promptFor = (description) =>
@@ -29,10 +30,10 @@ const openaiKey = () => {
   return key;
 };
 
-const editImage = async (prompt, { transparent = true } = {}) => {
+const editImage = async (prompt, { transparent = true, model = MODEL } = {}) => {
   const bytes = await readFile(REFERENCE_IMAGE);
   const form = new FormData();
-  form.set("model", MODEL);
+  form.set("model", model);
   form.set("prompt", prompt);
   form.set("image", new Blob([bytes], { type: "image/png" }), "apple.png");
   form.set("output_format", "png");
@@ -75,14 +76,21 @@ const resolveDestination = (destination) => {
 
 const generateImage = async (description) => {
   const prompt = promptFor(description);
-  try {
-    return await editImage(prompt, { transparent: true });
-  } catch (error) {
-    if (error.status === 400) {
-      return await editImage(prompt, { transparent: false });
+  const attempts = [
+    { transparent: true, model: MODEL },
+    { transparent: false, model: MODEL },
+    { transparent: true, model: MODEL_FALLBACK },
+    { transparent: false, model: MODEL_FALLBACK },
+  ];
+  let lastError;
+  for (const attempt of attempts) {
+    try {
+      return await editImage(prompt, attempt);
+    } catch (error) {
+      lastError = error;
     }
-    throw error;
   }
+  throw lastError;
 };
 
 const server = new McpServer({
