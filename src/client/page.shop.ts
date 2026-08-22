@@ -5,8 +5,10 @@ import {
   SHOP_COLUMNS,
   SHOP_ITEMS,
   ShopItem,
+  shopCoinsSpent,
   shopMysteryClass,
   shopTeaseCount,
+  shopUnlockMessage,
   visibleShopCount,
 } from "../shared/shop-items.js";
 import { StoreController } from "./controller.store.js";
@@ -187,9 +189,18 @@ export class ReadingBeeShop extends LitElement {
         border-radius: inherit;
       }
 
+      .row.mystery-0 .card img {
+        filter: grayscale(1);
+        opacity: 0.88;
+      }
+
+      .row.mystery-0 .card::after {
+        background: rgba(12, 11, 9, 0.08);
+      }
+
       .row.mystery-1 .card img {
         filter: grayscale(1) blur(2px);
-        opacity: 0.82;
+        opacity: 0.8;
       }
 
       .row.mystery-1 .card::after {
@@ -197,12 +208,21 @@ export class ReadingBeeShop extends LitElement {
       }
 
       .row.mystery-2 .card img {
-        filter: grayscale(1) blur(4px);
+        filter: grayscale(1) blur(5px);
         opacity: 0.7;
       }
 
       .row.mystery-2 .card::after {
-        background: rgba(12, 11, 9, 0.22);
+        background: rgba(12, 11, 9, 0.18);
+      }
+
+      .row.mystery-3 .card img {
+        filter: grayscale(1) blur(9px);
+        opacity: 0.58;
+      }
+
+      .row.mystery-3 .card::after {
+        background: rgba(12, 11, 9, 0.28);
       }
 
       .tease {
@@ -291,8 +311,10 @@ export class ReadingBeeShop extends LitElement {
       `;
     }
     const owned = SHOP_ITEMS.filter((item) => profile.inventory.includes(item.id));
-    const reveal = visibleShopCount(profile.peakCoins);
-    const teaseUntil = shopTeaseCount(profile.peakCoins);
+    const spent = shopCoinsSpent(profile.inventory);
+    const reveal = visibleShopCount(spent);
+    const teaseUntil = shopTeaseCount(spent);
+    const unlockHint = shopUnlockMessage(spent);
     const rows: { items: ShopItem[]; start: number }[] = [];
     for (let index = 0; index < teaseUntil; index += SHOP_COLUMNS) {
       rows.push({ items: SHOP_ITEMS.slice(index, index + SHOP_COLUMNS), start: index });
@@ -332,9 +354,9 @@ export class ReadingBeeShop extends LitElement {
                 <div class="row ${shopMysteryClass(hidden)}">
                   ${row.items.map((item) => this.card(item, profile.coins, false, hidden !== null))}
                   ${
-                    hidden === 2
+                    hidden === 0 && unlockHint
                       ? html`
-                          <p class="tease">Earn more coins to see more items</p>
+                          <p class="tease">${unlockHint}</p>
                         `
                       : ""
                   }

@@ -320,24 +320,30 @@ export const SHOP_ITEMS: ShopItem[] = CATALOG.map(([id, name, cost]) => item(id,
 export const shopItemById = (id: string): ShopItem | undefined => SHOP_ITEMS.find((item) => item.id === id);
 
 export const SHOP_COLUMNS = 3;
-export const SHOP_UNLOCKED_EXTRA_ROWS = 2;
-export const SHOP_TEASE_LIGHT_ROWS = 2;
-export const SHOP_TEASE_HEAVY_ROWS = 2;
-export const SHOP_TEASE_ROWS = SHOP_TEASE_LIGHT_ROWS + SHOP_TEASE_HEAVY_ROWS;
+export const SHOP_TEASE_ROWS = 4;
+export const SHOP_SPEND_STEP = 10;
 
-export const visibleShopCount = (peakCoins: number): number => {
-  const peak = Math.max(0, Math.round(peakCoins));
-  const rows = peak + SHOP_UNLOCKED_EXTRA_ROWS;
-  return Math.min(SHOP_ITEMS.length, rows * SHOP_COLUMNS);
+export const shopCoinsSpent = (inventory: string[]): number => {
+  return inventory.reduce((sum, id) => sum + (shopItemById(id)?.cost ?? 0), 0);
+};
+
+export const shopSpendNeededForCost = (cost: number): number => {
+  return SHOP_SPEND_STEP * Math.floor(Math.max(0, cost) / SHOP_SPEND_STEP);
+};
+
+export const visibleShopCount = (spent: number): number => {
+  const spentCoins = Math.max(0, Math.round(spent));
+  const topCost = spentCoins < SHOP_SPEND_STEP ? 9 : Math.min(100, shopSpendNeededForCost(spentCoins) + 9);
+  return Math.min(SHOP_ITEMS.length, topCost * SHOP_COLUMNS);
 };
 
 export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 0): number => {
-  const spent = inventory.reduce((sum, id) => sum + (shopItemById(id)?.cost ?? 0), 0);
+  const spent = shopCoinsSpent(inventory);
   return Math.max(coinsEarned, coins + spent);
 };
 
-export const shopTeaseCount = (peakCoins: number): number => {
-  const reveal = visibleShopCount(peakCoins);
+export const shopTeaseCount = (spent: number): number => {
+  const reveal = visibleShopCount(spent);
   return Math.min(SHOP_ITEMS.length, reveal + SHOP_COLUMNS * SHOP_TEASE_ROWS);
 };
 
@@ -350,5 +356,18 @@ export const hiddenShopRow = (index: number, reveal: number): 0 | 1 | 2 | 3 | nu
 
 export const shopMysteryClass = (hidden: 0 | 1 | 2 | 3 | null): string => {
   if (hidden === null) return "";
-  return hidden < SHOP_TEASE_LIGHT_ROWS ? "mystery-1" : "mystery-2";
+  return `mystery-${hidden}`;
+};
+
+export const nextShopSpendUnlock = (spent: number): number | null => {
+  const spentCoins = Math.max(0, Math.round(spent));
+  if (spentCoins >= 100) return null;
+  const next = spentCoins < SHOP_SPEND_STEP ? SHOP_SPEND_STEP : shopSpendNeededForCost(spentCoins) + SHOP_SPEND_STEP;
+  return next - spentCoins;
+};
+
+export const shopUnlockMessage = (spent: number): string | null => {
+  const more = nextShopSpendUnlock(spent);
+  if (more === null) return null;
+  return `Spend ${more} more coins to unlock more items`;
 };

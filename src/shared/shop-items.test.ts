@@ -3,7 +3,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { hiddenShopRow, SHOP_ITEMS, shopTeaseCount, visibleShopCount } from "./shop-items.js";
+import {
+  hiddenShopRow,
+  nextShopSpendUnlock,
+  SHOP_ITEMS,
+  shopTeaseCount,
+  shopUnlockMessage,
+  visibleShopCount,
+} from "./shop-items.js";
 
 const staticDir = fileURLToPath(new URL("../../src/static", import.meta.url));
 
@@ -70,21 +77,27 @@ describe("SHOP_ITEMS", () => {
     }
   });
 
-  it("unlocks rows from peak coins on hand plus two extra", () => {
-    assert.equal(visibleShopCount(0), 6);
-    assert.equal(visibleShopCount(1), 9);
-    assert.equal(visibleShopCount(5), 21);
-    assert.equal(visibleShopCount(98), 300);
-    assert.equal(visibleShopCount(200), 300);
+  it("unlocks cost 10+ only after spending 10 coins, 20+ after 20, and so on", () => {
+    assert.equal(visibleShopCount(0), 27);
+    assert.equal(visibleShopCount(9), 27);
+    assert.equal(visibleShopCount(10), 57);
+    assert.equal(visibleShopCount(19), 57);
+    assert.equal(visibleShopCount(20), 87);
+    assert.equal(visibleShopCount(100), 300);
+    assert.equal(nextShopSpendUnlock(0), 10);
+    assert.equal(nextShopSpendUnlock(15), 5);
+    assert.equal(nextShopSpendUnlock(100), null);
+    assert.equal(shopUnlockMessage(7), "Spend 3 more coins to unlock more items");
   });
 
-  it("teases two light-blur rows and two heavier-blur rows, then hides the rest", () => {
-    assert.equal(shopTeaseCount(0), 18);
-    assert.equal(hiddenShopRow(5, 6), null);
-    assert.equal(hiddenShopRow(6, 6), 0);
-    assert.equal(hiddenShopRow(11, 6), 1);
-    assert.equal(hiddenShopRow(12, 6), 2);
-    assert.equal(hiddenShopRow(17, 6), 3);
-    assert.equal(hiddenShopRow(18, 6), null);
+  it("shows four increasingly hidden preview rows, then nothing else", () => {
+    assert.equal(shopTeaseCount(0), 39);
+    assert.equal(hiddenShopRow(26, 27), null);
+    assert.equal(hiddenShopRow(27, 27), 0);
+    assert.equal(hiddenShopRow(29, 27), 0);
+    assert.equal(hiddenShopRow(30, 27), 1);
+    assert.equal(hiddenShopRow(33, 27), 2);
+    assert.equal(hiddenShopRow(38, 27), 3);
+    assert.equal(hiddenShopRow(39, 27), null);
   });
 });
