@@ -1,0 +1,17 @@
+{
+  "name": "readingbee-openai-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local MCP server that proxies OpenAI image generation for Reading Bee.",
+  "bin": {
+    "readingbee-openai-mcp": "./mcp-server.mjs"
+  },
+  "scripts": {
+    "start": "node mcp-server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  }
+}
