@@ -5,6 +5,7 @@ import {
   SHOP_COLUMNS,
   SHOP_ITEMS,
   ShopItem,
+  shopMysteryClass,
   shopTeaseCount,
   visibleShopCount,
 } from "../shared/shop-items.js";
@@ -204,14 +205,6 @@ export class ReadingBeeShop extends LitElement {
         background: rgba(12, 11, 9, 0.62);
       }
 
-      .row.mystery-3 .card img {
-        opacity: 0;
-      }
-
-      .row.mystery-3 .card::after {
-        background: #14110e;
-      }
-
       .tease {
         position: absolute;
         inset: 0;
@@ -336,10 +329,10 @@ export class ReadingBeeShop extends LitElement {
             ${rows.map((row) => {
               const hidden = hiddenShopRow(row.start, reveal);
               return html`
-                <div class="row ${hidden === null ? "" : `mystery-${hidden + 1}`}">
+                <div class="row ${shopMysteryClass(hidden)}">
                   ${row.items.map((item) => this.card(item, profile.coins, false, hidden !== null))}
                   ${
-                    hidden === 1
+                    hidden === 2
                       ? html`
                           <p class="tease">Earn more coins to see more items</p>
                         `

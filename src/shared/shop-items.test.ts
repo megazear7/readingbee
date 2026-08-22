@@ -70,22 +70,21 @@ describe("SHOP_ITEMS", () => {
     }
   });
 
-  it("always reveals the first three rows, then more as coins are earned", () => {
-    assert.equal(visibleShopCount(0), 9);
-    assert.equal(visibleShopCount(18), 24);
-    assert.equal(visibleShopCount(22), 30);
-    assert.equal(visibleShopCount(40), 57);
-    assert.equal(visibleShopCount(200), 297);
-    assert.equal(visibleShopCount(202), 300);
+  it("unlocks earned-coin rows plus two extra, ignoring coins spent", () => {
+    assert.equal(visibleShopCount(0), 6);
+    assert.equal(visibleShopCount(1), 9);
+    assert.equal(visibleShopCount(5), 21);
+    assert.equal(visibleShopCount(98), 300);
+    assert.equal(visibleShopCount(200), 300);
   });
 
-  it("teases three hidden rows and labels them by depth", () => {
+  it("teases two light-blur rows and two heavier-blur rows, then hides the rest", () => {
     assert.equal(shopTeaseCount(0), 18);
-    assert.equal(hiddenShopRow(8, 9), null);
-    assert.equal(hiddenShopRow(9, 9), 0);
-    assert.equal(hiddenShopRow(11, 9), 0);
-    assert.equal(hiddenShopRow(12, 9), 1);
-    assert.equal(hiddenShopRow(17, 9), 2);
-    assert.equal(hiddenShopRow(18, 9), null);
+    assert.equal(hiddenShopRow(5, 6), null);
+    assert.equal(hiddenShopRow(6, 6), 0);
+    assert.equal(hiddenShopRow(11, 6), 1);
+    assert.equal(hiddenShopRow(12, 6), 2);
+    assert.equal(hiddenShopRow(17, 6), 3);
+    assert.equal(hiddenShopRow(18, 6), null);
   });
 });

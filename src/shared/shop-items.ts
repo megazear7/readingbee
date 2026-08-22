@@ -320,14 +320,15 @@ export const SHOP_ITEMS: ShopItem[] = CATALOG.map(([id, name, cost]) => item(id,
 export const shopItemById = (id: string): ShopItem | undefined => SHOP_ITEMS.find((item) => item.id === id);
 
 export const SHOP_COLUMNS = 3;
-export const SHOP_MIN_VISIBLE_ROWS = 3;
+export const SHOP_UNLOCKED_EXTRA_ROWS = 2;
+export const SHOP_TEASE_LIGHT_ROWS = 2;
+export const SHOP_TEASE_HEAVY_ROWS = 2;
+export const SHOP_TEASE_ROWS = SHOP_TEASE_LIGHT_ROWS + SHOP_TEASE_HEAVY_ROWS;
 
 export const visibleShopCount = (coinsEarned: number): number => {
-  const minVisible = SHOP_COLUMNS * SHOP_MIN_VISIBLE_ROWS;
-  const unlocked = SHOP_ITEMS.filter((item) => item.cost < coinsEarned / 2).length;
-  const count = Math.max(minVisible, unlocked);
-  const rows = Math.ceil(count / SHOP_COLUMNS) * SHOP_COLUMNS;
-  return Math.min(SHOP_ITEMS.length, rows);
+  const earned = Math.max(0, Math.round(coinsEarned));
+  const rows = earned + SHOP_UNLOCKED_EXTRA_ROWS;
+  return Math.min(SHOP_ITEMS.length, rows * SHOP_COLUMNS);
 };
 
 export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 0): number => {
@@ -337,12 +338,17 @@ export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 
 
 export const shopTeaseCount = (coinsEarned: number): number => {
   const reveal = visibleShopCount(coinsEarned);
-  return Math.min(SHOP_ITEMS.length, reveal + SHOP_COLUMNS * 3);
+  return Math.min(SHOP_ITEMS.length, reveal + SHOP_COLUMNS * SHOP_TEASE_ROWS);
 };
 
-export const hiddenShopRow = (index: number, reveal: number): 0 | 1 | 2 | null => {
+export const hiddenShopRow = (index: number, reveal: number): 0 | 1 | 2 | 3 | null => {
   if (index < reveal) return null;
   const row = Math.floor((index - reveal) / SHOP_COLUMNS);
-  if (row < 0 || row > 2) return null;
-  return row as 0 | 1 | 2;
+  if (row < 0 || row >= SHOP_TEASE_ROWS) return null;
+  return row as 0 | 1 | 2 | 3;
+};
+
+export const shopMysteryClass = (hidden: 0 | 1 | 2 | 3 | null): string => {
+  if (hidden === null) return "";
+  return hidden < SHOP_TEASE_LIGHT_ROWS ? "mystery-1" : "mystery-2";
 };
