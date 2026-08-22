@@ -13,9 +13,18 @@ export const playCoinSound = (): void => {
   void audio.play().catch(() => undefined);
 };
 
-export const playCoinSounds = (count: number, staggerMs = 70): void => {
+export const coinAppearWindow = (count: number): number => {
   const n = Math.max(0, Math.round(count));
+  if (n <= 1) return 0;
+  if (n <= 5) return 2;
+  if (n <= 15) return 3;
+  return 4;
+};
+
+export const playCoinSounds = (count: number, staggerMs?: number): void => {
+  const n = Math.max(0, Math.round(count));
+  const gap = staggerMs ?? (n <= 1 ? 0 : (coinAppearWindow(n) * 1000) / (n - 1));
   for (let i = 0; i < n; i += 1) {
-    window.setTimeout(() => playCoinSound(), i * staggerMs);
+    window.setTimeout(() => playCoinSound(), i * gap);
   }
 };

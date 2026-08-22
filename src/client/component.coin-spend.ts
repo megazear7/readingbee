@@ -1,6 +1,6 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { playCoinSound } from "./coin-sounds.js";
+import { coinAppearWindow, playCoinSound } from "./coin-sounds.js";
 
 type Flyer = {
   delay: number;
@@ -46,7 +46,6 @@ const quad = (start: number, control: number, end: number, t: number): number =>
 };
 
 export const SHOP_FRONT_IMAGE = "/shop-front.png";
-export const MAX_SPEND_COINS = 16;
 
 @customElement("reading-bee-coin-spend")
 export class ReadingBeeCoinSpend extends LitElement {
@@ -140,15 +139,16 @@ export class ReadingBeeCoinSpend extends LitElement {
   }
 
   private visualCount(): number {
-    return Math.max(1, Math.min(MAX_SPEND_COINS, Math.round(this.count)));
+    return Math.max(1, Math.round(this.count));
   }
 
   private spawn(): void {
     const n = this.visualCount();
-    const stagger = n > 10 ? 0.045 : 0.07;
+    const appearFor = coinAppearWindow(n);
+    const stagger = n <= 1 ? 0 : appearFor / (n - 1);
     this.flyers = Array.from({ length: n }, (_, index) => ({
       delay: COIN_START + index * stagger,
-      duration: 0.95 + Math.random() * 0.18,
+      duration: 0.95,
       startX: this.originX + (Math.random() - 0.5) * 14,
       startY: this.originY + (Math.random() - 0.5) * 8,
       dx: (Math.random() - 0.5) * 42,
@@ -240,7 +240,6 @@ export class ReadingBeeCoinSpend extends LitElement {
       if (!flyer.launched) {
         flyer.launched = true;
         this.burst(flyer.startX, flyer.startY, 7, 0.22, 120);
-        playCoinSound();
         this.dispatchEvent(new CustomEvent("coin-left", { bubbles: true, composed: true }));
       }
       if (flyer.arrived) {
@@ -250,6 +249,7 @@ export class ReadingBeeCoinSpend extends LitElement {
       if (local >= 1) {
         flyer.arrived = true;
         this.finishBurst(door.x + flyer.dx, door.y + flyer.dy);
+        playCoinSound();
         continue;
       }
       const u = easeInOut(Math.min(1, local));
