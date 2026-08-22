@@ -1,8 +1,9 @@
 # Reading Bee OpenAI MCP
 
 Local MCP server that proxies image generation to OpenAI. Callers pass a
-`description` and an optional `destination` path. The apple reference image and
-style prompt are applied inside the tool.
+`description` and an optional `destination` path. Each call picks a random
+image from `util/reference/` and asks OpenAI to match that style with a
+transparent background.
 
 ## Setup
 
@@ -18,7 +19,8 @@ Put your key in `util/.env` (gitignored):
 OPENAI_API_KEY=sk-your-key-here
 ```
 
-The reference image lives at `util/reference/apple.png`.
+Put style references in `util/reference/` (`apple.png`, `dog.png`, and any
+other PNG/JPEG/WebP). `make_image` chooses one at random for each call.
 
 ## Run
 
