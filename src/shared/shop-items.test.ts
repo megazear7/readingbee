@@ -8,12 +8,62 @@ import { hiddenShopRow, SHOP_ITEMS, shopTeaseCount, visibleShopCount } from "./s
 const staticDir = fileURLToPath(new URL("../../src/static", import.meta.url));
 
 describe("SHOP_ITEMS", () => {
-  it("has unique rewards with matching image files", () => {
+  it("has three unique rewards at every cost from 1 to 100", () => {
     const ids = new Set(SHOP_ITEMS.map((item) => item.id));
-    assert.equal(ids.size, SHOP_ITEMS.length);
+    assert.equal(SHOP_ITEMS.length, 300);
+    assert.equal(ids.size, 300);
     assert.equal(SHOP_ITEMS.find((item) => item.name === "Hat")?.cost, 2);
-    assert.equal(SHOP_ITEMS.find((item) => item.name === "Sword")?.cost, 10);
-    assert.equal(SHOP_ITEMS.find((item) => item.name === "House")?.cost, 40);
+    assert.equal(SHOP_ITEMS.find((item) => item.name === "Sword")?.cost, 20);
+    assert.equal(SHOP_ITEMS.find((item) => item.name === "House")?.cost, 80);
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 1).map((item) => item.id),
+      ["yoyo", "sticker", "balloon"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 5).map((item) => item.id),
+      ["gloves", "bunny", "surfboard"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 10).map((item) => item.id),
+      ["radio", "tent", "kitten"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 15).map((item) => item.id),
+      ["puppy", "shield", "parrot"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 20).map((item) => item.id),
+      ["tv", "pony", "sword"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 30).map((item) => item.id),
+      ["armor", "magic-wand", "barn"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 40).map((item) => item.id),
+      ["car", "treehouse", "big-tv"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 60).map((item) => item.id),
+      ["diamond-ring", "pirate-ship", "airplane"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 80).map((item) => item.id),
+      ["house", "crown", "rocket"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 100).map((item) => item.id),
+      ["castle", "space-station", "vacation-island"],
+    );
+    for (let cost = 1; cost <= 100; cost += 1) {
+      const row = SHOP_ITEMS.filter((item) => item.cost === cost);
+      assert.equal(row.length, 3, `cost ${cost}`);
+    }
+    for (let index = 0; index < SHOP_ITEMS.length; index += 3) {
+      const row = SHOP_ITEMS.slice(index, index + 3);
+      assert.equal(row[0].cost, row[1].cost);
+      assert.equal(row[1].cost, row[2].cost);
+    }
     for (const item of SHOP_ITEMS) {
       const file = join(staticDir, item.image.replace(/^\//, ""));
       assert.equal(existsSync(file), true, item.image);
@@ -22,10 +72,11 @@ describe("SHOP_ITEMS", () => {
 
   it("always reveals the first three rows, then more as coins are earned", () => {
     assert.equal(visibleShopCount(0), 9);
-    assert.equal(visibleShopCount(18), 9);
-    assert.equal(visibleShopCount(22), 12);
-    assert.equal(visibleShopCount(40), 21);
-    assert.equal(visibleShopCount(200), SHOP_ITEMS.length);
+    assert.equal(visibleShopCount(18), 24);
+    assert.equal(visibleShopCount(22), 30);
+    assert.equal(visibleShopCount(40), 57);
+    assert.equal(visibleShopCount(200), 297);
+    assert.equal(visibleShopCount(202), 300);
   });
 
   it("teases three hidden rows and labels them by depth", () => {
