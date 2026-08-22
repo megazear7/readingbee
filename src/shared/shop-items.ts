@@ -313,6 +313,36 @@ const CATALOG: [id: string, name: string, cost: number][] = [
   ["castle", "Castle", 100],
   ["space-station", "Space station", 100],
   ["vacation-island", "Vacation island", 100],
+  ["golden-castle", "Golden castle", 110],
+  ["cloud-kingdom", "Cloud kingdom", 110],
+  ["luxury-yacht", "Luxury yacht", 110],
+  ["ice-kingdom", "Ice kingdom", 120],
+  ["jungle-palace", "Jungle palace", 120],
+  ["space-colony", "Space colony", 120],
+  ["mountain-palace", "Mountain palace", 130],
+  ["coral-palace", "Coral palace", 130],
+  ["comet-ship", "Comet ship", 130],
+  ["crystal-spire", "Crystal spire", 140],
+  ["sky-palace", "Sky palace", 140],
+  ["moon-palace", "Moon palace", 140],
+  ["dragon-castle", "Dragon castle", 150],
+  ["ocean-kingdom", "Ocean kingdom", 150],
+  ["solar-sailer", "Solar sailer", 150],
+  ["phoenix-nest", "Phoenix nest", 160],
+  ["hidden-kingdom", "Hidden kingdom", 160],
+  ["star-harbor", "Star harbor", 160],
+  ["titan-statue", "Titan statue", 170],
+  ["lost-city", "Lost city", 170],
+  ["nebula-garden", "Nebula garden", 170],
+  ["world-tree", "World tree", 180],
+  ["sky-ark", "Sky ark", 180],
+  ["cosmic-garden", "Cosmic garden", 180],
+  ["eternity-gate", "Eternity gate", 190],
+  ["dream-island", "Dream island", 190],
+  ["galaxy-core", "Galaxy core", 190],
+  ["wonder-world", "Wonder world", 200],
+  ["star-palace", "Star palace", 200],
+  ["endless-kingdom", "Endless kingdom", 200],
 ];
 
 export const SHOP_ITEMS: ShopItem[] = CATALOG.map(([id, name, cost]) => item(id, name, cost));
@@ -328,13 +358,19 @@ export const shopCoinsSpent = (inventory: string[]): number => {
 };
 
 export const shopSpendNeededForCost = (cost: number): number => {
-  return SHOP_SPEND_STEP * Math.floor(Math.max(0, cost) / SHOP_SPEND_STEP);
+  if (cost < SHOP_SPEND_STEP) return 0;
+  const decade = SHOP_SPEND_STEP * Math.floor(cost / SHOP_SPEND_STEP);
+  return decade <= 100 ? decade : decade - SHOP_SPEND_STEP;
 };
 
 export const visibleShopCount = (spent: number): number => {
   const spentCoins = Math.max(0, Math.round(spent));
-  const topCost = spentCoins < SHOP_SPEND_STEP ? 9 : Math.min(100, shopSpendNeededForCost(spentCoins) + 9);
-  return Math.min(SHOP_ITEMS.length, topCost * SHOP_COLUMNS);
+  let count = 0;
+  for (const entry of SHOP_ITEMS) {
+    if (shopSpendNeededForCost(entry.cost) > spentCoins) break;
+    count += 1;
+  }
+  return count;
 };
 
 export const lifetimeCoins = (coins: number, inventory: string[], coinsEarned = 0): number => {
@@ -361,9 +397,14 @@ export const shopMysteryClass = (hidden: 0 | 1 | 2 | 3 | null): string => {
 
 export const nextShopSpendUnlock = (spent: number): number | null => {
   const spentCoins = Math.max(0, Math.round(spent));
-  if (spentCoins >= 100) return null;
-  const next = spentCoins < SHOP_SPEND_STEP ? SHOP_SPEND_STEP : shopSpendNeededForCost(spentCoins) + SHOP_SPEND_STEP;
-  return next - spentCoins;
+  let next: number | null = null;
+  for (const entry of SHOP_ITEMS) {
+    const needed = shopSpendNeededForCost(entry.cost);
+    if (needed > spentCoins && (next === null || needed < next)) {
+      next = needed;
+    }
+  }
+  return next === null ? null : next - spentCoins;
 };
 
 export const shopUnlockMessage = (spent: number): string | null => {

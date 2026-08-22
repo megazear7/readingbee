@@ -141,20 +141,22 @@ export class ReadingBeeInstructions extends LitElement {
             </ul>
             <h2>Levels, coins, and the shop</h2>
             <p>
-              The gold badge is the student's reading level. Tap it to open achievements: medals they have earned are
-              in color, and ones they have not earned yet are gray. After a few correct reads, a gold coin can fly up
-              to the top of the screen. A correct read counts fully toward the next coin, and an incorrect read counts
-              half as much. Tap the coin count to visit the shop and spend coins on rewards. Items that cost 10 or more
-              unlock after spending 10 coins, 20 or more after spending 20, and so on. Four gray preview rows hint at
-              what is next; anything past that stays hidden. The profile circle opens switching and progress.
+              The gold badge is the student's reading level. Tap it to open achievements: medals they have earned are in
+              color, and ones they have not earned yet are gray. After a few correct reads, a gold coin can fly up to
+              the top of the screen. A correct read counts fully toward the next coin, and an incorrect read counts half
+              as much. Tap the coin count to visit the shop and spend coins on rewards. Items that cost 10 or more
+              unlock after spending 10 coins, 20 or more after spending 20, and so on. After the 100-coin row, the
+              110-coin row unlocks at 100 spent, the 120-coin row at 110 spent, and so on up to 200. Four gray preview
+              rows hint at what is next; anything past that stays hidden. The profile circle opens switching and
+              progress.
             </p>
             <h2>Settings</h2>
             <p>
               Settings is locked with a 4-digit instructor passcode. Opening settings from the reading screen always
-              asks for the passcode. Tap a student to open the teacher view for progress toward the next level, activity,
-              and renaming. Use Settings to add profiles, share a student, change colors, and back up data. After
-              unlocking, you can move between settings pages without entering it again until you go back to the reading
-              screen.
+              asks for the passcode. Tap a student to open the teacher view for progress toward the next level,
+              activity, and renaming. Use Settings to add profiles, share a student, change colors, and back up data.
+              After unlocking, you can move between settings pages without entering it again until you go back to the
+              reading screen.
             </p>
           </reading-bee-instructor-gate>
         </div>

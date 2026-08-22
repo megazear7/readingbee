@@ -23,6 +23,37 @@ const descriptions = {
   "space-station": "a colorful cartoon space station",
   "vacation-island": "a tropical vacation island with palm trees, a sandy beach, and a small hut",
   rocket: "a colorful cartoon rocket ship",
+  football: "a colorful cartoon American football, a brown oval leather ball with white laces",
+  "golden-castle": "a colorful cartoon castle made of shining gold",
+  "cloud-kingdom": "a colorful cartoon kingdom of palaces sitting on fluffy clouds",
+  "luxury-yacht": "a colorful cartoon luxury yacht on blue water",
+  "ice-kingdom": "a colorful cartoon ice kingdom with sparkling blue palaces",
+  "jungle-palace": "a colorful cartoon palace hidden in a lush jungle",
+  "space-colony": "a colorful cartoon space colony on a distant planet",
+  "mountain-palace": "a colorful cartoon palace perched on a mountain peak",
+  "coral-palace": "a colorful cartoon palace made of coral under the sea",
+  "comet-ship": "a colorful cartoon spaceship riding a comet",
+  "crystal-spire": "a colorful cartoon giant crystal tower",
+  "sky-palace": "a colorful cartoon palace floating high in the sky",
+  "moon-palace": "a colorful cartoon palace on the moon",
+  "dragon-castle": "a colorful cartoon castle with a friendly dragon",
+  "ocean-kingdom": "a colorful cartoon underwater ocean kingdom",
+  "solar-sailer": "a colorful cartoon solar sailing spaceship",
+  "phoenix-nest": "a colorful cartoon giant nest with a glowing phoenix",
+  "hidden-kingdom": "a colorful cartoon secret kingdom behind a waterfall",
+  "star-harbor": "a colorful cartoon harbor in space with docked starships",
+  "titan-statue": "a colorful cartoon colossal friendly statue",
+  "lost-city": "a colorful cartoon lost city in the jungle",
+  "nebula-garden": "a colorful cartoon garden of stars and nebula flowers",
+  "world-tree": "a colorful cartoon enormous world tree",
+  "sky-ark": "a colorful cartoon giant ark flying through the clouds",
+  "cosmic-garden": "a colorful cartoon garden among the planets",
+  "eternity-gate": "a colorful cartoon glowing magical gateway",
+  "dream-island": "a colorful cartoon island from a dream, with candy hills and a rainbow",
+  "galaxy-core": "a colorful cartoon glowing galaxy core",
+  "wonder-world": "a colorful cartoon whole world of wonders, tiny continents and sparkles",
+  "star-palace": "a colorful cartoon palace made of stars",
+  "endless-kingdom": "a colorful cartoon endless kingdom stretching to the horizon",
 };
 
 const parseCatalog = (source) => {
@@ -34,13 +65,20 @@ const parseCatalog = (source) => {
   return rows;
 };
 
+const FORCE = new Set(
+  (process.env.SHOP_FORCE ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean),
+);
 const catalog = parseCatalog(await readFile(CATALOG, "utf8"));
 const jobs = catalog
   .map((item) => ({
+    id: item.id,
     description: descriptions[item.id] ?? item.name.toLowerCase(),
     destination: `src/static/shop/${item.id}.png`,
   }))
-  .filter((job, index) => index % SHARDS === SHARD && !existsSync(join(REPO, job.destination)));
+  .filter((job, index) => index % SHARDS === SHARD && (FORCE.has(job.id) || !existsSync(join(REPO, job.destination))));
 
 console.error(`shard ${SHARD}/${SHARDS}: ${jobs.length} images to generate`);
 

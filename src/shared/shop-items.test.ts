@@ -15,10 +15,10 @@ import {
 const staticDir = fileURLToPath(new URL("../../src/static", import.meta.url));
 
 describe("SHOP_ITEMS", () => {
-  it("has three unique rewards at every cost from 1 to 100", () => {
+  it("has three unique rewards at every cost from 1 to 100, then every ten from 110 to 200", () => {
     const ids = new Set(SHOP_ITEMS.map((item) => item.id));
-    assert.equal(SHOP_ITEMS.length, 300);
-    assert.equal(ids.size, 300);
+    assert.equal(SHOP_ITEMS.length, 330);
+    assert.equal(ids.size, 330);
     assert.equal(SHOP_ITEMS.find((item) => item.name === "Hat")?.cost, 2);
     assert.equal(SHOP_ITEMS.find((item) => item.name === "Sword")?.cost, 20);
     assert.equal(SHOP_ITEMS.find((item) => item.name === "House")?.cost, 80);
@@ -66,6 +66,18 @@ describe("SHOP_ITEMS", () => {
       const row = SHOP_ITEMS.filter((item) => item.cost === cost);
       assert.equal(row.length, 3, `cost ${cost}`);
     }
+    for (let cost = 110; cost <= 200; cost += 10) {
+      const row = SHOP_ITEMS.filter((item) => item.cost === cost);
+      assert.equal(row.length, 3, `cost ${cost}`);
+    }
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 110).map((item) => item.id),
+      ["golden-castle", "cloud-kingdom", "luxury-yacht"],
+    );
+    assert.deepEqual(
+      SHOP_ITEMS.filter((item) => item.cost === 200).map((item) => item.id),
+      ["wonder-world", "star-palace", "endless-kingdom"],
+    );
     for (let index = 0; index < SHOP_ITEMS.length; index += 3) {
       const row = SHOP_ITEMS.slice(index, index + 3);
       assert.equal(row[0].cost, row[1].cost);
@@ -83,10 +95,15 @@ describe("SHOP_ITEMS", () => {
     assert.equal(visibleShopCount(10), 57);
     assert.equal(visibleShopCount(19), 57);
     assert.equal(visibleShopCount(20), 87);
-    assert.equal(visibleShopCount(100), 300);
+    assert.equal(visibleShopCount(99), 297);
+    assert.equal(visibleShopCount(100), 303);
+    assert.equal(visibleShopCount(109), 303);
+    assert.equal(visibleShopCount(110), 306);
+    assert.equal(visibleShopCount(190), 330);
     assert.equal(nextShopSpendUnlock(0), 10);
     assert.equal(nextShopSpendUnlock(15), 5);
-    assert.equal(nextShopSpendUnlock(100), null);
+    assert.equal(nextShopSpendUnlock(100), 10);
+    assert.equal(nextShopSpendUnlock(190), null);
     assert.equal(shopUnlockMessage(7), "Spend 3 more coins to unlock more items");
   });
 
