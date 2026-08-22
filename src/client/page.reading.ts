@@ -471,7 +471,11 @@ export class ReadingBeeReading extends LitElement {
     `,
   ];
 
+  private static readonly slideMs = 360;
+
   @state() private outgoing: ReadingText | null = null;
+  @state() private holdingIncoming = false;
+  @state() private incomingEnter = false;
   @state() private ripples: { id: number; kind: "yes" | "no"; x: number; y: number }[] = [];
   @state() private celebrating = false;
   @state() private celebrateLevel = 1;
@@ -562,7 +566,7 @@ export class ReadingBeeReading extends LitElement {
           </div>
         </header>
         <div class="stage">
-          ${this.promptView(text, this.outgoing ? "enter" : "")}
+          ${this.holdingIncoming ? "" : this.promptView(text, this.incomingEnter || this.outgoing ? "enter" : "")}
           ${this.outgoing ? this.promptView(this.outgoing, "leave") : ""}
         </div>
         <footer>
@@ -681,6 +685,9 @@ export class ReadingBeeReading extends LitElement {
     }
     const nextLevel = appStore.currentProfile?.level ?? 0;
     this.pendingLevelUp = nextLevel > previousLevel ? nextLevel : 0;
+    if (this.pendingLevelUp) {
+      this.holdingIncoming = true;
+    }
     window.setTimeout(() => {
       this.outgoing = null;
       this.outgoingPicture = undefined;
@@ -690,7 +697,7 @@ export class ReadingBeeReading extends LitElement {
       } else {
         this.locked = false;
       }
-    }, 360);
+    }, ReadingBeeReading.slideMs);
   }
 
   private startCelebration(level: number): void {
@@ -706,7 +713,12 @@ export class ReadingBeeReading extends LitElement {
 
   private onCelebrateDone = (): void => {
     this.celebrating = false;
-    this.locked = false;
+    this.holdingIncoming = false;
+    this.incomingEnter = true;
+    window.setTimeout(() => {
+      this.incomingEnter = false;
+      this.locked = false;
+    }, ReadingBeeReading.slideMs);
   };
 
   private startCoinFlight(event: Event | undefined, count: number): void {
