@@ -13,6 +13,7 @@ import { backIcon } from "./icons.js";
 import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
+import "./component.coin-spend.js";
 
 @customElement("reading-bee-shop")
 export class ReadingBeeShop extends LitElement {
@@ -250,6 +251,11 @@ export class ReadingBeeShop extends LitElement {
   ];
 
   @state() private poppingId: string | null = null;
+  @state() private spending = false;
+  @state() private spendCount = 0;
+  @state() private pendingSpend = 0;
+  @state() private spendOriginX = 0;
+  @state() private spendOriginY = 0;
 
   constructor() {
     super();
@@ -277,7 +283,7 @@ export class ReadingBeeShop extends LitElement {
           <h1>Shop</h1>
           <div class="coins">
             <span class="coin-dot"></span>
-            ${profile.coins}
+            ${profile.coins + this.pendingSpend}
           </div>
         </header>
         <div class="body">
@@ -312,6 +318,18 @@ export class ReadingBeeShop extends LitElement {
           </div>
         </div>
       </div>
+      ${
+        this.spending
+          ? html`
+              <reading-bee-coin-spend
+                .originX=${this.spendOriginX}
+                .originY=${this.spendOriginY}
+                .count=${this.spendCount}
+                @coin-left=${this.onCoinLeft}
+                @done=${this.onSpendDone}></reading-bee-coin-spend>
+            `
+          : ""
+      }
     `;
   }
 
@@ -341,14 +359,44 @@ export class ReadingBeeShop extends LitElement {
   }
 
   private onItem = (item: ShopItem, inventory: boolean, mystery = false): void => {
-    if (mystery) return;
+    if (mystery || this.spending) return;
     if (inventory) {
       this.play(item.id);
       return;
     }
     if (appStore.currentProfile?.inventory.includes(item.id)) return;
     if (!appStore.buyItem(item.id)) return;
+    this.startSpend(item);
+  };
+
+  private startSpend(item: ShopItem): void {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.play(item.id);
+      return;
+    }
+    const counter = this.renderRoot.querySelector(".coins");
+    if (counter instanceof HTMLElement) {
+      const rect = counter.getBoundingClientRect();
+      this.spendOriginX = rect.left + 18;
+      this.spendOriginY = rect.top + rect.height / 2;
+    } else {
+      this.spendOriginX = window.innerWidth - 64;
+      this.spendOriginY = 36;
+    }
+    this.spendCount = item.cost;
+    this.pendingSpend = item.cost;
+    this.spending = true;
     this.play(item.id);
+  }
+
+  private onCoinLeft = (): void => {
+    this.pendingSpend = Math.max(0, this.pendingSpend - 1);
+  };
+
+  private onSpendDone = (): void => {
+    this.spending = false;
+    this.pendingSpend = 0;
+    this.spendCount = 0;
   };
 
   private play(id: string): void {

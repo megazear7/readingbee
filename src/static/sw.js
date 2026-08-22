@@ -50,6 +50,7 @@ const ASSETS = [
   "/logo/logo-512x512.png",
   "/logo/logo-64x64.png",
   "/logo/logo-original.png",
+  "/shop-front.webp",
   "/shop/backpack.webp",
   "/shop/balloon.webp",
   "/shop/baseball-bat.webp",
@@ -109,6 +110,11 @@ const ASSETS = [
   "/shop/treehouse.webp",
   "/shop/unicorn.webp",
   "/shop/yoyo.webp",
+  "/sounds/Coin01.mp3",
+  "/sounds/Coin02.mp3",
+  "/sounds/Coin03.mp3",
+  "/sounds/Coin04.mp3",
+  "/sounds/Coin05.mp3",
 ];
 
 const precache = async () => {
