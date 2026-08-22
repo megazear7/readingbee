@@ -141,10 +141,11 @@ export class ReadingBeeInstructions extends LitElement {
             </ul>
             <h2>Levels, coins, and the shop</h2>
             <p>
-              The gold badge is the student's reading level. After a few correct reads, a gold coin can fly up to the
-              top of the screen. A correct read counts fully toward the next coin, and an incorrect read counts half as
-              much. Tap the coin count to visit the shop and spend coins on rewards. Collecting more coins, even after
-              spending them, reveals more shop rows. The profile circle opens switching and progress.
+              The gold badge is the student's reading level. Tap it to open achievements: medals they have earned are
+              in color, and ones they have not earned yet are gray. After a few correct reads, a gold coin can fly up
+              to the top of the screen. A correct read counts fully toward the next coin, and an incorrect read counts
+              half as much. Tap the coin count to visit the shop and spend coins on rewards. Collecting more coins, even
+              after spending them, reveals more shop rows. The profile circle opens switching and progress.
             </p>
             <h2>Settings</h2>
             <p>

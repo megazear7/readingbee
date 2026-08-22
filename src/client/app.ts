@@ -17,6 +17,7 @@ import "./page.edit-profile.js";
 import "./page.instructions.js";
 import "./page.reading.js";
 import "./page.settings.js";
+import "./page.achievements.js";
 import "./page.shop.js";
 import "./page.upload.js";
 
@@ -73,7 +74,11 @@ export class ReadingBeeApp extends LitElement {
                 ? html`
                     <reading-bee-shop></reading-bee-shop>
                   `
-                : this.view === "settings"
+                : this.view === "achievements"
+                  ? html`
+                      <reading-bee-achievements></reading-bee-achievements>
+                    `
+                  : this.view === "settings"
                   ? html`
                       <reading-bee-settings></reading-bee-settings>
                     `

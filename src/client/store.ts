@@ -8,6 +8,7 @@ import {
   setExactLevel,
 } from "../shared/algorithm.js";
 import { corpus, corpusById } from "../shared/corpus.js";
+import { syncAchievements } from "../shared/achievements.js";
 import { lifetimeCoins, shopItemById } from "../shared/shop-items.js";
 import { clearState, loadState, saveState, StorageLike } from "../shared/storage.js";
 import { AppState, PASSCODE_LENGTH, Profile, ReadingBand, ReadingText, ResultKind } from "../shared/type.app.js";
@@ -16,6 +17,10 @@ import { createId } from "../shared/util.id.js";
 const withLifetimeCoins = (profile: Profile): Profile => {
   const coinsEarned = lifetimeCoins(profile.coins, profile.inventory, profile.coinsEarned);
   return coinsEarned === profile.coinsEarned ? profile : { ...profile, coinsEarned };
+};
+
+const withProgress = (profile: Profile): Profile => {
+  return syncAchievements(withLifetimeCoins(profile));
 };
 
 export class AppStore extends EventTarget {
@@ -29,7 +34,7 @@ export class AppStore extends EventTarget {
     const loaded = loadState(storage);
     this.state = {
       ...loaded,
-      profiles: loaded.profiles.map((profile) => ensureCurrentText(withLifetimeCoins(profile), corpus)),
+      profiles: loaded.profiles.map((profile) => ensureCurrentText(withProgress(profile), corpus)),
     };
     this.persist();
   }
@@ -52,15 +57,16 @@ export class AppStore extends EventTarget {
   }
 
   private replaceProfile(next: Profile): void {
+    const synced = withProgress(next);
     this.state = {
       ...this.state,
-      profiles: this.state.profiles.map((profile) => (profile.id === next.id ? next : profile)),
+      profiles: this.state.profiles.map((profile) => (profile.id === synced.id ? synced : profile)),
     };
     this.persist();
   }
 
   createFirstProfile(name: string, band: ReadingBand): void {
-    const profile = ensureCurrentText(createProfile(name, band, []), corpus);
+    const profile = ensureCurrentText(withProgress(createProfile(name, band, [])), corpus);
     this.state = {
       ...this.state,
       profiles: [profile],
@@ -71,7 +77,10 @@ export class AppStore extends EventTarget {
 
   addProfile(name: string, band: ReadingBand, colorPairIndex?: number): Profile {
     const used = this.state.profiles.map((profile) => profile.colorPairIndex);
-    const profile = ensureCurrentText(createProfile(name, band, used, new Date(), colorPairIndex), corpus);
+    const profile = ensureCurrentText(
+      withProgress(createProfile(name, band, used, new Date(), colorPairIndex)),
+      corpus,
+    );
     this.state = {
       ...this.state,
       profiles: [...this.state.profiles, profile],
@@ -213,7 +222,7 @@ export class AppStore extends EventTarget {
 
   importSharedProfile(incoming: Profile): Profile {
     const normalized = normalizeImportedProfile(incoming);
-    const profile = ensureCurrentText(withLifetimeCoins({ ...normalized, id: createId() }), corpus);
+    const profile = ensureCurrentText(withProgress({ ...normalized, id: createId() }), corpus);
     this.state = {
       ...this.state,
       profiles: [...this.state.profiles, profile],
@@ -224,7 +233,7 @@ export class AppStore extends EventTarget {
   }
 
   importState(next: AppState): void {
-    const profiles = next.profiles.map((profile) => ensureCurrentText(withLifetimeCoins(profile), corpus));
+    const profiles = next.profiles.map((profile) => ensureCurrentText(withProgress(profile), corpus));
     const currentProfileId = profiles.some((profile) => profile.id === next.currentProfileId)
       ? next.currentProfileId
       : (profiles[0]?.id ?? null);

@@ -132,6 +132,22 @@ try {
   if (!coinLabel.includes("0")) {
     throw new Error(`Coin counter showed ${coinLabel}`);
   }
+  await click(page, ["reading-bee-reading", "shadow", "button.badge-btn"]);
+  await page.waitForSelector("reading-bee-achievements", { timeout: 10000 });
+  const achievementCount = await withPage(
+    page,
+    ["reading-bee-achievements", "shadow"],
+    "return node.querySelectorAll('.card').length;",
+  );
+  if (achievementCount !== 21) {
+    throw new Error(`Expected 21 achievements, found ${achievementCount}`);
+  }
+  const levelLabel = await textOf(page, ["reading-bee-achievements", "shadow", ".level-label"]);
+  if (!levelLabel.includes("Level")) {
+    throw new Error(`Achievements page missing level, got ${levelLabel}`);
+  }
+  await click(page, ["reading-bee-achievements", "shadow", "button.back"]);
+  await page.waitForSelector("reading-bee-reading", { timeout: 10000 });
   await click(page, ["reading-bee-reading", "shadow", "button.score-btn.yes"]);
   await page.waitForFunction(
     (previous) => {
@@ -214,6 +230,9 @@ try {
   const instructions = await textOf(page, ["reading-bee-instructions", "shadow", ".body"]);
   if (!instructions.includes("left arrow") || !instructions.includes("green check")) {
     throw new Error("Instructions missing shortcut help");
+  }
+  if (!instructions.includes("achievements")) {
+    throw new Error("Instructions missing achievements help");
   }
   if (!instructions.includes("reading screen always")) {
     throw new Error("Instructions missing settings passcode help");

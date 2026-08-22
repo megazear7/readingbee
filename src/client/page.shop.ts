@@ -14,7 +14,9 @@ import { navigate } from "./nav.js";
 import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { playCoinSounds } from "./coin-sounds.js";
+import "./component.achievement-flight.js";
 import "./component.coin-spend.js";
+import "./component.level-badge.js";
 
 @customElement("reading-bee-shop")
 export class ReadingBeeShop extends LitElement {
@@ -46,6 +48,24 @@ export class ReadingBeeShop extends LitElement {
         padding: calc(0.7rem + env(safe-area-inset-top)) 1rem 0.8rem;
         background: linear-gradient(to bottom, #0c0b09 70%, rgba(12, 11, 9, 0.86));
         border-bottom: 1px solid var(--color-panel-border);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .badge-btn {
+        width: 52px;
+        height: 58px;
+        padding: 0;
+        border-radius: 12px;
+        transition: transform var(--time-normal) ease;
+      }
+
+      .badge-btn:hover {
+        transform: scale(1.06);
       }
 
       header h1 {
@@ -257,6 +277,13 @@ export class ReadingBeeShop extends LitElement {
   @state() private pendingSpend = 0;
   @state() private spendOriginX = 0;
   @state() private spendOriginY = 0;
+  @state() private flyingAchievement = "";
+  @state() private achievementOriginX = 0;
+  @state() private achievementOriginY = 0;
+  @state() private achievementTargetX = 0;
+  @state() private achievementTargetY = 0;
+  private pendingAchievements: string[] = [];
+  private achievementOriginFrom: { x: number; y: number } | null = null;
 
   constructor() {
     super();
@@ -282,9 +309,14 @@ export class ReadingBeeShop extends LitElement {
         <header>
           <button class="back" aria-label="Back" @click=${() => navigate("reading")}>${backIcon}</button>
           <h1>Shop</h1>
-          <div class="coins">
-            <span class="coin-dot"></span>
-            ${profile.coins + this.pendingSpend}
+          <div class="header-right">
+            <button class="badge-btn" aria-label="Achievements" @click=${() => navigate("achievements")}>
+              <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
+            </button>
+            <div class="coins">
+              <span class="coin-dot"></span>
+              ${profile.coins + this.pendingSpend}
+            </div>
           </div>
         </header>
         <div class="body">
@@ -331,6 +363,19 @@ export class ReadingBeeShop extends LitElement {
             `
           : ""
       }
+      ${
+        this.flyingAchievement
+          ? html`
+              <reading-bee-achievement-flight
+                .achievementId=${this.flyingAchievement}
+                .originX=${this.achievementOriginX}
+                .originY=${this.achievementOriginY}
+                .targetX=${this.achievementTargetX}
+                .targetY=${this.achievementTargetY}
+                @done=${this.onAchievementDone}></reading-bee-achievement-flight>
+            `
+          : ""
+      }
     `;
   }
 
@@ -349,7 +394,11 @@ export class ReadingBeeShop extends LitElement {
       .filter(Boolean)
       .join(" ");
     return html`
-      <button class=${classes} ?disabled=${mystery} @click=${() => this.onItem(item, inventory, mystery)}>
+      <button
+        class=${classes}
+        data-item=${item.id}
+        ?disabled=${mystery}
+        @click=${() => this.onItem(item, inventory, mystery)}>
         <img src=${item.image} alt=${mystery ? "" : item.name} />
         <span class="name">${item.name}</span>
         <span class="meta">
@@ -366,7 +415,10 @@ export class ReadingBeeShop extends LitElement {
       return;
     }
     if (appStore.currentProfile?.inventory.includes(item.id)) return;
+    const previousAchievements = appStore.currentProfile?.achievements ?? [];
     if (!appStore.buyItem(item.id)) return;
+    const earned = (appStore.currentProfile?.achievements ?? []).filter((id) => !previousAchievements.includes(id));
+    this.pendingAchievements = [...this.pendingAchievements, ...earned];
     this.startSpend(item);
   };
 
@@ -374,7 +426,13 @@ export class ReadingBeeShop extends LitElement {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       playCoinSounds(item.cost);
       this.play(item.id);
+      this.playNextAchievement();
       return;
+    }
+    const source = this.renderRoot.querySelector(`[data-item="${item.id}"]`);
+    if (source instanceof HTMLElement) {
+      const rect = source.getBoundingClientRect();
+      this.achievementOriginFrom = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     }
     const counter = this.renderRoot.querySelector(".coins");
     if (counter instanceof HTMLElement) {
@@ -399,6 +457,37 @@ export class ReadingBeeShop extends LitElement {
     this.spending = false;
     this.pendingSpend = 0;
     this.spendCount = 0;
+    this.playNextAchievement();
+  };
+
+  private playNextAchievement(): void {
+    if (this.flyingAchievement || this.pendingAchievements.length === 0) {
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.pendingAchievements = [];
+      return;
+    }
+    const next = this.pendingAchievements[0];
+    this.pendingAchievements = this.pendingAchievements.slice(1);
+    const origin = this.achievementOriginFrom;
+    this.achievementOriginX = origin?.x ?? window.innerWidth / 2;
+    this.achievementOriginY = origin?.y ?? window.innerHeight * 0.55;
+    const badge = this.renderRoot.querySelector("reading-bee-level-badge");
+    if (badge instanceof HTMLElement) {
+      const rect = badge.getBoundingClientRect();
+      this.achievementTargetX = rect.left + rect.width / 2;
+      this.achievementTargetY = rect.top + rect.height / 2;
+    } else {
+      this.achievementTargetX = window.innerWidth - 140;
+      this.achievementTargetY = 44;
+    }
+    this.flyingAchievement = next;
+  }
+
+  private onAchievementDone = (): void => {
+    this.flyingAchievement = "";
+    window.setTimeout(() => this.playNextAchievement(), 120);
   };
 
   private play(id: string): void {

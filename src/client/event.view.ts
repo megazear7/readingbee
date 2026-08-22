@@ -3,7 +3,16 @@ import z from "zod";
 export const ViewEventName = z.literal("ReadingBeeView");
 export type ViewEventName = z.infer<typeof ViewEventName>;
 
-export const AppView = z.enum(["reading", "settings", "add-profile", "edit-profile", "upload", "instructions", "shop"]);
+export const AppView = z.enum([
+  "reading",
+  "settings",
+  "add-profile",
+  "edit-profile",
+  "upload",
+  "instructions",
+  "shop",
+  "achievements",
+]);
 export type AppView = z.infer<typeof AppView>;
 
 export const ViewEventDetail = z.object({

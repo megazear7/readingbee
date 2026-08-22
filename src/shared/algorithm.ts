@@ -150,9 +150,12 @@ export const createProfile = (
     events: [],
     coins: 0,
     coinsEarned: 0,
+    peakCoins: 0,
     inventory: [],
     correctsUntilCoin: 0,
     coinAwardsUntilBonus: defaultRng.int(10, 15),
+    maxCorrectStreak: 0,
+    achievements: [],
   };
 };
 
@@ -444,12 +447,14 @@ export const applyResult = (
       return progressCorrect({ ...next, textStats: stats }, corpus);
     }
     const jumped = clampLevel(Math.max(next.level, text.level) + ALGORITHM.easyJump);
+    const streak = next.correctStreak + 1;
     return {
       ...next,
       textStats: stats,
       boostActive: true,
       boostLevel: jumped,
-      correctStreak: next.correctStreak + 1,
+      correctStreak: streak,
+      maxCorrectStreak: Math.max(next.maxCorrectStreak, streak),
       wrongStreak: 0,
     };
   }
@@ -487,6 +492,7 @@ const progressCorrect = (profile: Profile, corpus: ReadingText[]): Profile => {
   return {
     ...profile,
     correctStreak: shouldLevelUp ? 0 : streak,
+    maxCorrectStreak: Math.max(profile.maxCorrectStreak, streak),
     wrongStreak: 0,
     level,
     boostActive: shouldLevelUp ? false : profile.boostActive,

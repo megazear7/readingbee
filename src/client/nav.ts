@@ -6,6 +6,7 @@ export const pathForView = (view: AppView, id?: string): string => {
   if (view === "upload") return "/settings/upload";
   if (view === "instructions") return "/settings/instructions";
   if (view === "shop") return "/shop";
+  if (view === "achievements") return "/achievements";
   if (view === "settings") return "/settings";
   return "/";
 };
@@ -16,6 +17,7 @@ export const viewFromPath = (pathname = window.location.pathname): AppView => {
   if (pathname.startsWith("/settings/instructions")) return "instructions";
   if (pathname.startsWith("/settings/profile/")) return "edit-profile";
   if (pathname.startsWith("/shop")) return "shop";
+  if (pathname.startsWith("/achievements")) return "achievements";
   if (pathname.startsWith("/settings")) return "settings";
   return "reading";
 };

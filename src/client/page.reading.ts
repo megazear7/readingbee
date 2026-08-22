@@ -10,6 +10,7 @@ import { appStore } from "./store.js";
 import { globalStyles } from "./styles.global.js";
 import { consumeAppUpdated } from "./sw-update.js";
 import { playCoinSounds } from "./coin-sounds.js";
+import "./component.achievement-flight.js";
 import "./component.coin-flight.js";
 import "./component.level-badge.js";
 import "./component.level-up.js";
@@ -55,6 +56,18 @@ export class ReadingBeeReading extends LitElement {
         display: flex;
         align-items: center;
         gap: 0.55rem;
+      }
+
+      .badge-btn {
+        width: 52px;
+        height: 58px;
+        padding: 0;
+        border-radius: 12px;
+        transition: transform var(--time-normal) ease;
+      }
+
+      .badge-btn:hover {
+        transform: scale(1.06);
       }
 
       .icon-btn,
@@ -506,7 +519,13 @@ export class ReadingBeeReading extends LitElement {
   @state() private tipsDismissed = false;
   @state() private locked = false;
   @state() private busyAction: ResultKind | null = null;
+  @state() private flyingAchievement = "";
+  @state() private achievementOriginX = 0;
+  @state() private achievementOriginY = 0;
+  @state() private achievementTargetX = 0;
+  @state() private achievementTargetY = 0;
   private pendingLevelUp = 0;
+  private pendingAchievements: string[] = [];
   private rippleSeq = 0;
 
   constructor() {
@@ -562,7 +581,9 @@ export class ReadingBeeReading extends LitElement {
             }
           </div>
           <div class="header-right">
-            <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
+            <button class="badge-btn" aria-label="Achievements" @click=${() => navigate("achievements")}>
+              <reading-bee-level-badge .level=${profile.level}></reading-bee-level-badge>
+            </button>
             <button class="coins" aria-label="Shop" @click=${() => navigate("shop")}>
               <span class="coin-dot"></span>
               ${Math.max(0, profile.coins - this.pendingEarn)}
@@ -647,6 +668,19 @@ export class ReadingBeeReading extends LitElement {
               `
             : ""
         }
+        ${
+          this.flyingAchievement
+            ? html`
+                <reading-bee-achievement-flight
+                  .achievementId=${this.flyingAchievement}
+                  .originX=${this.achievementOriginX}
+                  .originY=${this.achievementOriginY}
+                  .targetX=${this.achievementTargetX}
+                  .targetY=${this.achievementTargetY}
+                  @done=${this.onAchievementDone}></reading-bee-achievement-flight>
+              `
+            : ""
+        }
       </div>
     `;
   }
@@ -702,11 +736,14 @@ export class ReadingBeeReading extends LitElement {
       this.spawnRipple(result === "right" ? "yes" : "no", event);
     }
     const previousLevel = appStore.currentProfile?.level ?? 0;
+    const previousAchievements = appStore.currentProfile?.achievements ?? [];
     this.busyAction = result;
     this.locked = true;
     this.outgoingPicture = pictureFor(current, appStore.currentProfile ?? undefined);
     this.outgoing = current;
     const { awardedCoins } = appStore.record(result);
+    const earned = (appStore.currentProfile?.achievements ?? []).filter((id) => !previousAchievements.includes(id));
+    this.pendingAchievements = [...this.pendingAchievements, ...earned];
     if (awardedCoins > 0 && !this.flyingCoin) {
       this.startCoinFlight(event, awardedCoins);
     }
@@ -724,6 +761,7 @@ export class ReadingBeeReading extends LitElement {
       } else {
         this.busyAction = null;
         this.locked = false;
+        this.playNextAchievement();
       }
     }, ReadingBeeReading.slideMs);
   }
@@ -747,7 +785,47 @@ export class ReadingBeeReading extends LitElement {
       this.incomingEnter = false;
       this.busyAction = null;
       this.locked = false;
+      this.playNextAchievement();
     }, ReadingBeeReading.slideMs);
+  };
+
+  private badgeTarget(): { x: number; y: number } {
+    const badge = this.renderRoot.querySelector("reading-bee-level-badge");
+    if (badge instanceof HTMLElement) {
+      const rect = badge.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+    return { x: window.innerWidth - 140, y: 44 };
+  }
+
+  private playNextAchievement(): void {
+    if (this.flyingAchievement || this.pendingAchievements.length === 0) {
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.pendingAchievements = [];
+      return;
+    }
+    const next = this.pendingAchievements[0];
+    this.pendingAchievements = this.pendingAchievements.slice(1);
+    const stage = this.renderRoot.querySelector(".stage");
+    if (stage instanceof HTMLElement) {
+      const rect = stage.getBoundingClientRect();
+      this.achievementOriginX = rect.left + rect.width / 2;
+      this.achievementOriginY = rect.top + rect.height / 2;
+    } else {
+      this.achievementOriginX = window.innerWidth / 2;
+      this.achievementOriginY = window.innerHeight * 0.46;
+    }
+    const target = this.badgeTarget();
+    this.achievementTargetX = target.x;
+    this.achievementTargetY = target.y;
+    this.flyingAchievement = next;
+  }
+
+  private onAchievementDone = (): void => {
+    this.flyingAchievement = "";
+    window.setTimeout(() => this.playNextAchievement(), 120);
   };
 
   private startCoinFlight(event: Event | undefined, count: number): void {

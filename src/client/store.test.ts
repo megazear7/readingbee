@@ -114,6 +114,7 @@ describe("AppStore", () => {
     const coins = store.currentProfile!.coins;
     const earned = store.currentProfile!.coinsEarned;
     assert.equal(earned >= 1, true);
+    assert.equal(store.currentProfile?.achievements.includes("level-5"), true);
     assert.equal(store.buyItem("sticker"), coins >= 1);
     if (coins >= 1) {
       assert.equal(store.currentProfile?.inventory.includes("sticker"), true);
