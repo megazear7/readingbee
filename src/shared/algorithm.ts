@@ -30,7 +30,7 @@ const LEGACY_STARTING_LEVEL: Record<Exclude<ReadingBand, "letters">, number> = {
 
 export const ALGORITHM = {
   retireCorrectCount: 3,
-  levelUpStreak: 50,
+  levelUpStreak: 25,
   easyJump: 8,
   reviewMaxDepth: 8,
   wrongCooldownMin: 2,
